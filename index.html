@@ -87,6 +87,13 @@
   .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;} .emp-grid .field{margin:0;} .req{color:#e11d48;}
   .emp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;} .emp-card{border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center;background:var(--paper);}
   .emp-card img,.emp-card .emp-av{width:84px;height:84px;border-radius:50%;object-fit:cover;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 8px;}
+  .nav-item{text-align:left;} .nav-ic{vertical-align:middle;display:inline-flex;flex:none;width:26px;height:26px;border-radius:8px;align-items:center;justify-content:center;color:#fff;margin-right:10px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+  .vt-ic{display:inline-flex;width:40px;height:40px;border-radius:12px;color:#fff;align-items:center;justify-content:center;margin-right:12px;vertical-align:middle;box-shadow:0 4px 12px rgba(0,0,0,.18);}
+  .gj-acc{padding:0 !important;} .acc-h{cursor:pointer;margin:0 !important;padding:14px 18px;display:flex !important;align-items:center;justify-content:space-between;user-select:none;}
+  .acc-h::after{content:'';width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s;opacity:.55;margin-right:4px;}
+  .gj-acc:not(.gj-closed) .acc-h::after{transform:rotate(-135deg);} .gj-acc>*:not(.acc-h){margin-left:18px;margin-right:18px;} .gj-acc:not(.gj-closed)>:last-child{margin-bottom:16px;} .gj-acc.gj-closed>*:not(.acc-h){display:none !important;} .gj-acc.gj-closed:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+  .empty-state::before{content:'';display:block;width:72px;height:72px;margin:0 auto 12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23g)' opacity='.15'/%3E%3Cpath d='M12 34l6-16h28l6 16v12a3 3 0 01-3 3H15a3 3 0 01-3-3z' fill='url(%23g)'/%3E%3Cpath d='M12 34h12l3 5h10l3-5h12' fill='none' stroke='white' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;}
+  .assist-row{display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper-2);font-size:13px;cursor:pointer;} .assist-row input{margin-top:3px;}
   .bell-n{position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;line-height:1.3;}
   #topbar-bell{position:relative;background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px;}
   .bday-card{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(90deg,#fff7d6,#ffe3ec);border:1px solid #f4c7d3;color:#5b2a3b;border-radius:12px;padding:10px 14px;margin:0 0 12px;}
@@ -792,8 +799,8 @@
     <div class="lg-youre">You're</div>
     <div class="role-toggle lg-roles">
       <button type="button" class="role-btn lg-role active" id="role-admin-btn" onclick="setLoginRole('admin')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Admin</span></button>
-      <button type="button" class="role-btn lg-role" id="role-teacher-btn" onclick="setLoginRole('teacher')"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><span>Employees</span></button>
-      <button type="button" class="role-btn lg-role" id="role-student-btn" onclick="openStudentApp()"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/></svg><span>Students</span></button>
+      <button type="button" class="role-btn lg-role" id="role-teacher-btn" onclick="setLoginRole('teacher')"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><span>Employee</span></button>
+      <button type="button" class="role-btn lg-role" id="role-student-btn" onclick="openStudentApp()"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/></svg><span>Student</span></button>
     </div>
     <div id="login-teacher-select-field" style="display:none;">
       <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input type="text" id="login-user" placeholder="Name or ID (type Cashier for the cashier)*" list="login-user-list" autocomplete="username" autocapitalize="words" oninput="onLoginUserInput()" onkeydown="if(event.key==='Enter'){var p=document.getElementById('login-pass');if(p)p.focus();}"></div>
@@ -1505,6 +1512,10 @@
         <div class="view-header">
           <div><h1 class="view-title">Settings</h1></div>
         </div>
+        <div class="panel admin-only"><h3>Google Sheet health</h3>
+          <p class="hint">Every detail the app keeps is shown as a column you can read and edit in Google Sheets. This check finds columns the app no longer uses. Before anything is removed its data is copied to a backup tab, so nothing useful is lost.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn" onclick="sheetHealth(false)">Check the sheet</button><button class="btn btn-primary" onclick="sheetHealth(true)">Remove unused columns</button></div>
+          <pre id="sheet-health-out" style="white-space:pre-wrap;font:12.5px/1.5 inherit;margin-top:10px;"></pre></div>
         <div class="panel"><details class="ts-acc" id="theme-acc"><summary><h3 style="margin:0;">Look &amp; feel &mdash; design templates</h3><span class="hint" id="theme-cur" style="margin:0;"></span></summary><p class="hint" style="margin-top:12px;">Pick a design for the whole app. The choice is saved for the school, so every staff member sees the same look on every device.</p><div id="theme-gallery"></div></details></div>
         <div class="panel">
           <p class="hint" style="float:right;margin:0;">Version <span id="app-version"></span></p>
@@ -2338,7 +2349,7 @@ function acadApplyUnits(mergedUnits){
 let syncLast = { state: 'idle', msg: '' };
 function setSyncState(state, msg){ syncLast = { state, msg: msg || '' }; renderSyncPill(); }
 function renderSyncPill(){
-  try{ if (session.role && DATA && DATA.teachers){ bdayEnsureMessages(); msgBell(); renderBdayBar(); } }catch(e){}
+  try{ if (session.role && DATA && DATA.teachers){ bdayEnsureMessages(); msgBell(); renderBdayBar(); tprofTopbar(); assistantGuard(); } }catch(e){}
   const el = document.getElementById('topbar-sync');
   if (!el) return;
   if (!(DATA && DATA.sync && DATA.sync.enabled)){ el.style.display = 'none'; return; }
@@ -2786,7 +2797,8 @@ window.addEventListener('DOMContentLoaded', async function(){
     const savedRole = sess.getItem('sfa_role');
     if (savedRole){
       session.role = savedRole;
-      if (savedRole === 'teacher') session.teacherId = sess.getItem('sfa_teacher_id');
+      if (sess.getItem('sfa_assist')) session.assistant = true;
+      if (savedRole === 'teacher' || session.assistant) session.teacherId = sess.getItem('sfa_teacher_id');
       enterApp();
     }
   }
@@ -3084,6 +3096,7 @@ const BDAY_WISHES = [
 ];
 function bdayWish(){ return BDAY_WISHES[Math.floor(Math.random() * BDAY_WISHES.length)]; }
 function msgMe(){
+  if (session.assistant){ const ta = getTeacherObj(); if (ta) return { id: ta.id, name: ta.name, kind: 'teacher' }; }
   if (session.role === 'teacher') return { id: session.teacherId, name: (getTeacherObj() || {}).name || 'Teacher', kind: 'teacher' };
   if (session.role === 'proprietor'){ const p = getProprietor(); return { id: (p && p.id) || 'proprietor', name: (p && p.name) || 'Proprietor', kind: 'proprietor' }; }
   if (session.role === 'cashier') return { id: 'cashier', name: 'Cashier', kind: 'cashier' };
@@ -3189,7 +3202,7 @@ function renderBdayBar(){
   el.innerHTML = today.map(x => {
     const mine = x.t.id === me.id, first = escapeHtml(String(x.t.name).split(' ')[0]);
     const wishMsg = (DATA.messages || []).find(m => m.id === 'bdaywish-' + x.t.id + '-' + todayStr());
-    return '<div class="bday-card">' + (x.t.photo ? '<img src="' + x.t.photo + '" alt="">' : '<span class="bday-ico">🎂</span>')
+    return '<div class="bday-card">' + (x.t.photo ? '<img src="' + imgSrc(x.t.photo) + '" alt="">' : '<span class="bday-ico">🎂</span>')
       + '<div style="flex:1;min-width:200px;"><strong>' + (mine ? 'Happy birthday, ' + first + '! 🎉' : 'It\'s ' + escapeHtml(x.t.name) + '\'s birthday today!') + '</strong><div class="hint" style="margin:2px 0 0;color:inherit;opacity:.85;">'
       + (mine ? escapeHtml(wishMsg ? String(wishMsg.text).replace(/^Dear [^,]*, /, '') : bdayWish()) : 'Send a warm wish.') + '</div></div>'
       + (mine || x.t._nonTeaching ? '' : '<button class="btn btn-sm" onclick="bdayWishNow(\'' + x.t.id + '\')">Send a birthday wish</button>') + '</div>';
@@ -4311,9 +4324,11 @@ function doLogin(){
       errEl.innerHTML = '<div class="gate-error">Incorrect password.</div>';
       return;
     }
-    session.role = 'teacher';
+    session.role = teacher.assistant ? 'admin' : 'teacher';
+    session.assistant = !!teacher.assistant;
     session.teacherId = teacher.id;
-    sess.setItem('sfa_role', 'teacher');
+    sess.setItem('sfa_role', session.role);
+    sess.setItem('sfa_assist', teacher.assistant ? '1' : '');
     sess.setItem('sfa_teacher_id', teacher.id);
     document.getElementById('login-pass').value = '';
     enterApp();
@@ -4334,8 +4349,8 @@ function doLogout(){
   document.body.classList.remove('viewonly');
   loginTeacherPicked = false; selectedLoginTeacherId = null;
   { const lu = document.getElementById('login-user'); if (lu) lu.value = ''; }
-  session.role = null;
-  sess.removeItem('sfa_role');
+  session.role = null; session.assistant = false; session.teacherId = null;
+  sess.removeItem('sfa_role'); sess.removeItem('sfa_assist');
   { const ph = document.getElementById('topbar-photo'); if (ph) ph.style.display = 'none'; const pb = document.getElementById('topbar-profile-btn'); if (pb) pb.style.display = 'none'; }
   document.getElementById('app').style.display = 'none';
   document.getElementById('gate-login').style.display = 'flex';
@@ -4348,6 +4363,12 @@ function resetApp(){
 }
 
 /* ---------- app shell ---------- */
+const ASSIST_BLOCKED = ['settings', 'backup', 'teacheraccounts', 'fees', 'staff', 'studentaccess'];
+function assistantGuard(){
+  if (!session.assistant || !DATA || !DATA.teachers) return;
+  const t = getTeacherObj();
+  if (!t || !t.assistant){ toast('Your admin assistant access has been switched off.'); doLogout(); }
+}
 function enterApp(){
   document.getElementById('gate-login').style.display = 'none';
   document.getElementById('gate-setup').style.display = 'none';
@@ -4398,7 +4419,13 @@ function enterApp(){
     const pr = getProprietor();
     document.getElementById('topbar-role').textContent = ((pr && pr.name) || 'PROPRIETOR').toUpperCase() + ' · VIEW ONLY';
   }
-  document.querySelectorAll('.teacher-only').forEach(el => el.style.display = isTeacher ? '' : 'none');
+  document.querySelectorAll('.teacher-only').forEach(el => el.style.display = (isTeacher || session.assistant) ? '' : 'none');
+  if (session.assistant){
+    ASSIST_BLOCKED.forEach(v => document.querySelectorAll('.nav-item[data-view="' + v + '"]').forEach(el => { el.style.display = 'none'; }));
+    const ta = getTeacherObj(); document.getElementById('topbar-role').textContent = ((ta && ta.name) || 'ASSISTANT').toUpperCase() + ' · ADMIN ASSISTANT';
+    document.querySelectorAll('.admin-only').forEach(el => { if (el.id === 'staff-form-panel' || el.id === 'staff-idcard-panel') el.style.display = 'none'; });
+    const tt = getTeacherObj(); if (tt && !teacherProfileComplete(tt)) setTimeout(() => openTeacherProfile(true), 300);
+  }
   { const an = document.getElementById('nav-assessments'); if (an) an.style.display = (isAdmin || isTeacher) ? '' : 'none'; }
   { const ab = document.getElementById('nav-attendance'); if (ab && session.role === 'cashier') ab.style.display = 'none'; }
   if (isTeacher){
@@ -4419,6 +4446,7 @@ function enterApp(){
   if (!DATA.messages) DATA.messages = [];
   try{ bdayEnsureMessages(); }catch(e){}
   msgBell(); renderBdayBar();
+  try{ gjLook2Init(); }catch(e){ console.error(e); }
   startPresence();
 }
 function toggleSidebar(){
@@ -4426,6 +4454,7 @@ function toggleSidebar(){
   document.getElementById('backdrop').classList.toggle('active');
 }
 function showView(name){
+  if (session.assistant && ASSIST_BLOCKED.indexOf(name) >= 0){ toast('Only the main admin can open that page.'); return; }
   if (session.role === 'proprietor'){ if (PROP_VIEWS.indexOf(name) < 0) return; }
   else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess'].includes(name)) return;
   if (name === 'overview' && session.role !== 'admin' && session.role !== 'proprietor') return;
@@ -4941,9 +4970,9 @@ function saveTeacherProfile(){
 }
 function tprofTopbar(){
   const img = document.getElementById('topbar-photo'); if (!img) return;
-  const t = session.role === 'teacher' ? getTeacherObj() : null;
-  if (t && t.photo){ img.src = t.photo; img.style.display = ''; } else { img.style.display = 'none'; }
-  const b = document.getElementById('topbar-profile-btn'); if (b) b.style.display = t ? '' : 'none';
+  const t = session.role === 'teacher' ? getTeacherObj() : (session.role === 'proprietor' ? getProprietor() : (session.assistant ? getTeacherObj() : null));
+  if (t && t.photo){ const s = imgSrc(t.photo); if (img.getAttribute('src') !== s) img.src = s; img.style.display = ''; } else { img.style.display = 'none'; }
+  const b = document.getElementById('topbar-profile-btn'); if (b) b.style.display = (session.role === 'teacher' || session.assistant) ? '' : 'none';
 }
 
 /* ---------- TEACHER MANAGEMENT (admin) ---------- */
@@ -5259,6 +5288,7 @@ function teacherSetupBlockHtml(teacher){
       </div>
       <div style="display:flex;gap:8px;align-items:center;">${resetBtn}${removeBtn}</div>
     </div>
+    ${teacher ? `<label class="assist-row"><input type="checkbox" class="ts-assist" ${teacher.assistant ? 'checked' : ''} onchange="tsToggleAssist('${teacher.id}', this.checked)"><span><strong>Admin assistant</strong> — can help you enter data (admissions, students, payments, attendance, academic records, ID cards). Cannot open Settings, Teacher Accounts, Fee Schedule, Backup, Staff pay or Student Access. Switch it off any time and it ends at once.</span></label>` : '<div class="hint">Save this teacher first, then you can make them an admin assistant.</div>'}
     <div class="ts-sec">Profile (used for the ID card)</div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
       <div style="display:flex;align-items:center;gap:10px;">
@@ -5309,6 +5339,11 @@ function tsPhotoClear(btn){
   const block = btn.closest('[data-teacher-block]'); block.dataset.photo = 'REMOVE';
   const blank = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#e5e7eb"/><circle cx="32" cy="25" r="11" fill="#9ca3af"/><ellipse cx="32" cy="56" rx="20" ry="16" fill="#9ca3af"/></svg>');
   block.querySelector('.ts-photo-prev').src = blank; block.querySelector('.ts-av').src = blank;
+}
+function tsToggleAssist(id, on){
+  const t = (DATA.teachers || []).find(x => x.id === id); if (!t || session.role !== 'admin' || session.assistant) return;
+  t.assistant = !!on; t.updatedAt = new Date().toISOString(); saveData();
+  toast(on ? t.name + ' is now an admin assistant.' : t.name + ' is no longer an admin assistant.');
 }
 function tsApplyProfile(t, block){
   const g = (block.querySelector('.ts-gender') || {}).value; if (g !== undefined) t.gender = g || t.gender || '';
@@ -8068,6 +8103,7 @@ function editStaffRow(key){
   const o = isT ? (DATA.teachers || []).find(x => x.id === id) : nonTeachingList().find(x => x.id === id);
   if (!o) return;
   resetStaffForm();
+  { const fp = document.getElementById('staff-form-panel'); if (fp) fp.classList.remove('gj-closed'); }
   document.getElementById('staff-edit-id').value = o.id;
   document.getElementById('staff-edit-kind').value = isT ? 'teacher' : 'staff';
   document.getElementById('staff-name').value = o.name;
@@ -8092,7 +8128,7 @@ function staffCardsHtml(rows){
 function showStaffProfile(key){
   const isT = String(key).indexOf('t:') === 0, id = String(key).slice(2);
   const o = isT ? (DATA.teachers || []).find(x => x.id === id) : nonTeachingList().find(x => x.id === id); if (!o) return;
-  const adm = session.role === 'admin' || session.role === 'proprietor';
+  const adm = (session.role === 'admin' && !session.assistant) || session.role === 'proprietor';
   const row = (k, v) => v ? '<tr><td style="color:var(--text-dim);width:40%;">' + k + '</td><td><strong>' + escapeHtml(String(v)) + '</strong></td></tr>' : '';
   const html = '<div style="max-width:460px;"><div style="text-align:center;">' + (o.photo ? '<img src="' + imgSrc(o.photo) + '" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">' : '<div style="font-size:48px;">👤</div>') + '<h3 style="margin:6px 0 0;">' + escapeHtml(o.name) + '</h3><div class="hint">' + escapeHtml(isT ? teachingPosition(o) : (o.position || '')) + '</div></div><table style="margin-top:10px;width:100%;">'
     + row('ID number', o.idNumber) + row('Mobile', o.phone) + row('Email', o.email) + row('Gender', o.gender) + row('Birthday', o.dobDay && o.dobMonth ? o.dobDay + ' ' + TPROF_MONTHS[o.dobMonth - 1] : '') + row('Date joined', o.joinDate)
@@ -11080,7 +11116,7 @@ function applyTheme(id){
   el.textContent = gjThemeCss(t);
   document.documentElement.setAttribute('data-gj-theme', t.id);
   gjLoadFont(t.font);
-  try{ localStorage.setItem('gj_theme', t.id); }catch(e){}
+  try{ localStorage.setItem('gj_theme', String(id)); }catch(e){}
   const mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.content = t.top1;
 }
 function themeChoose(id){
@@ -11106,6 +11142,135 @@ function renderThemeGallery(){
       + gjMini(t) + '<div style="padding:8px 4px 2px;"><strong style="font-size:13.5px;">' + escapeHtml(t.name) + '</strong>' + (on ? ' <span class="status-badge status-paid" style="margin-left:4px;">In use</span>' : '') + '<div class="hint" style="margin:3px 0 0;font-size:12px;line-height:1.35;">' + escapeHtml(t.desc) + '</div></div></div>';
   }).join('') + '</div>';
 }
+/* ================================================================ GJ-LOOK 2: more themes, custom colours, colourful icons, folding pages */
+function gjMix(a, b, r){ const pa = /^#?([0-9a-f]{6})$/i.exec(a), pb = /^#?([0-9a-f]{6})$/i.exec(b); if (!pa || !pb) return a; const x = parseInt(pa[1], 16), y = parseInt(pb[1], 16); const m = (s, t) => Math.round(s * (1 - r) + t * r); return '#' + [16, 8, 0].map(sh => m((x >> sh) & 255, (y >> sh) & 255).toString(16).padStart(2, '0')).join(''); }
+function gjSimple(id, name, p, accent, o){
+  o = o || {};
+  const dark = !!o.dark, sideDark = o.side !== 'light';
+  return gjMk(id, name, o.desc || 'A ready-made colour scheme.', {
+    top1: p, top2: gjShade(p, 45), top: o.top || 'grad', sideBg: o.sideBg || (sideDark ? gjShade(p, -70) : '#FFFFFF'), side: sideDark ? 'dark' : 'light',
+    accent, btn: p, btnText: o.btnText, paper: dark ? '#0E1422' : gjMix(p, '#ffffff', .94), panel: dark ? '#162033' : '#FFFFFF', line: dark ? '#2A3550' : gjMix(p, '#ffffff', .82),
+    text: dark ? '#D5DDEC' : gjShade(p, -95), dim: dark ? '#93A1BA' : gjMix(gjShade(p, -40), '#8892a6', .55), head: dark ? '#E7EEFB' : gjShade(p, -35), dark, font: o.font || 'jakarta', r: o.r === undefined ? 14 : o.r, sh: o.sh || 'lift'
+  });
+}
+GJ_THEMES.push(
+  gjSimple('teal', 'Teal Wave', '#0F766E', '#F59E0B'), gjSimple('indigo', 'Indigo Night', '#4338CA', '#22D3EE'), gjSimple('slate', 'Slate & Lime', '#334155', '#A3E635'),
+  gjSimple('amber', 'Amber Glow', '#B45309', '#FBBF24', { side: 'light' }), gjSimple('cherry', 'Cherry Pop', '#BE185D', '#FB7185', { side: 'light' }), gjSimple('aqua', 'Aqua Fresh', '#0891B2', '#34D399', { side: 'light' }),
+  gjSimple('plum', 'Plum Velvet', '#7E22CE', '#F0ABFC'), gjSimple('coffee', 'Coffee House', '#78350F', '#F59E0B', { font: 'serif', r: 8 }), gjSimple('mint', 'Mint Chip', '#047857', '#6EE7B7', { side: 'light' }),
+  gjSimple('navygold', 'Navy & Gold', '#1E3A8A', '#FACC15'), gjSimple('coral', 'Coral Reef', '#E11D48', '#06B6D4', { side: 'light' }), gjSimple('graphite', 'Graphite (dark)', '#6366F1', '#34D399', { dark: true, top: 'solid' }),
+  gjSimple('ember', 'Ember (dark)', '#EA580C', '#FACC15', { dark: true, top: 'solid' }), gjSimple('lagoon', 'Lagoon (dark)', '#0EA5E9', '#F472B6', { dark: true })
+);
+function gjCustomTheme(str){
+  const m = /^custom:([0-9a-f]{6}),([0-9a-f]{6}),([dl]),([dl])$/i.exec(str || ''); if (!m) return null;
+  const t = gjSimple('custom', 'Your own colours', '#' + m[1], '#' + m[2], { side: m[3] === 'd' ? 'dark' : 'light', dark: m[4] === 'd', top: 'grad' });
+  return t;
+}
+const _gjThemeOrig = gjTheme;
+gjTheme = function(id){ if (String(id).indexOf('custom:') === 0){ const c = gjCustomTheme(id); if (c) return c; } return _gjThemeOrig(id); };
+function gjChip(t){
+  const top = t.top === 'grad' ? 'linear-gradient(90deg,' + t.top1 + ',' + (t.top2 || t.top1) + ')' : t.top1;
+  return '<div style="height:46px;border-radius:8px;overflow:hidden;position:relative;background:' + t.paper + ';border:1px solid ' + (t.line || '#ddd') + ';"><div style="height:11px;background:' + top + ';"></div><div style="position:absolute;left:0;top:11px;bottom:0;width:24%;background:' + t.sideBg + ';"></div><div style="position:absolute;left:32%;top:19px;width:34%;height:8px;border-radius:4px;background:' + t.accent + ';"></div><div style="position:absolute;left:32%;top:31px;right:6px;height:8px;border-radius:4px;background:' + (t.panel || '#fff') + ';border:1px solid ' + (t.line || '#ddd') + ';"></div></div>';
+}
+renderThemeGallery = function(){
+  const el = document.getElementById('theme-gallery'); if (!el) return;
+  const cur = (DATA.uiTheme || 'classic'), admin = session.role === 'admin';
+  const ct = gjTheme(cur);
+  { const tc = document.getElementById('theme-cur'); if (tc) tc.textContent = 'In use: ' + ct.name; }
+  const cm = /^custom:([0-9a-f]{6}),([0-9a-f]{6}),([dl]),([dl])$/i.exec(cur) || ['', '1d4ed8', 'f59e0b', 'd', 'l'];
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;">' + GJ_THEMES.map(t => {
+    const on = t.id === cur;
+    return '<div title="' + escapeHtml(t.desc || '') + '" onclick="' + (admin ? 'themeChoose(\'' + t.id + '\')' : '') + '" style="cursor:' + (admin ? 'pointer' : 'default') + ';border:2px solid ' + (on ? 'var(--gold)' : 'var(--line)') + ';border-radius:12px;padding:5px;background:var(--panel);">' + gjChip(t) + '<div style="font-size:11.5px;font-weight:' + (on ? 700 : 500) + ';padding:4px 2px 0;line-height:1.2;">' + escapeHtml(t.name) + (on ? ' ✓' : '') + '</div></div>';
+  }).join('') + '</div>'
+  + (admin ? '<div style="margin-top:14px;padding:12px;border:1px dashed var(--line);border-radius:12px;"><strong>Make your own</strong><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;">'
+    + '<label style="font-size:12.5px;">Main colour<br><input type="color" id="cust-p" value="#' + cm[1] + '" style="width:64px;height:34px;padding:0;border:0;background:none;"></label>'
+    + '<label style="font-size:12.5px;">Accent colour<br><input type="color" id="cust-a" value="#' + cm[2] + '" style="width:64px;height:34px;padding:0;border:0;background:none;"></label>'
+    + '<label style="font-size:12.5px;">Side menu<br><select id="cust-s" style="padding:6px;"><option value="d"' + (cm[3] === 'd' ? ' selected' : '') + '>Dark</option><option value="l"' + (cm[3] === 'l' ? ' selected' : '') + '>Light</option></select></label>'
+    + '<label style="font-size:12.5px;">Pages<br><select id="cust-m" style="padding:6px;"><option value="l"' + (cm[4] === 'l' ? ' selected' : '') + '>Light</option><option value="d"' + (cm[4] === 'd' ? ' selected' : '') + '>Dark</option></select></label>'
+    + '<button class="btn btn-primary" onclick="themeCustomApply()">Use these colours</button></div></div>' : '');
+};
+async function sheetHealth(apply){
+  const out = document.getElementById('sheet-health-out');
+  if (!HOSTED){ out.textContent = 'This needs the school server (open the page online).'; return; }
+  if (apply && !confirm('Remove the unused columns now? Their data is copied to the "Removed data (backup)" tab first.')) return;
+  out.textContent = 'Working...';
+  try{ const r = await hostedCall({ action: 'sheetAudit', apply: !!apply }); out.textContent = r.error ? r.error : r.text; }catch(e){ out.textContent = 'Could not reach the server: ' + (e.message || e) + '. If this keeps happening, the school server needs the newest Code.gs.'; }
+}
+function themeCustomApply(){
+  const g = id => document.getElementById(id).value.replace('#', '').toLowerCase();
+  themeChoose('custom:' + g('cust-p') + ',' + g('cust-a') + ',' + g('cust-s') + ',' + g('cust-m'));
+}
+themeChoose = function(id){
+  if (session.role !== 'admin'){ toast('Only the admin can change the look.'); return; }
+  DATA.uiTheme = id; markMetaDirty('uiTheme'); saveData(); applyTheme(id); renderThemeGallery();
+  toast('“' + gjTheme(id).name + '” is now the look for everyone.');
+};
+/* ---------- colourful icon set ---------- */
+const GJ_IC = {
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>', users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.8 0 4.5 1.8 4.5 4.5"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>', userplus:'<circle cx="10" cy="8" r="4"/><path d="M2.5 21c0-4 3.4-7 7.5-7"/><path d="M18 8v6M15 11h6"/>',
+  card:'<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/><path d="M6 15h4"/>', cash:'<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9v.01M18 15v.01"/>',
+  ticket:'<path d="M4 8a2 2 0 002-2h12a2 2 0 002 2v2a2 2 0 000 4v2a2 2 0 00-2 2H6a2 2 0 00-2-2v-2a2 2 0 000-4z"/><path d="M13 6v12" stroke-dasharray="2 2"/>',
+  utensils:'<path d="M6 3v7a2 2 0 002 2v9"/><path d="M10 3v7a2 2 0 01-2 2"/><path d="M17 3c-2 2-3 5-3 8h3v10"/>', chat:'<path d="M4 5h16a1.5 1.5 0 011.5 1.5v9A1.5 1.5 0 0120 17h-8l-5 4v-4H4a1.5 1.5 0 01-1.5-1.5v-9A1.5 1.5 0 014 5z"/><path d="M7.5 10h9M7.5 13h5"/>',
+  phone:'<rect x="6.5" y="2.5" width="11" height="19" rx="3"/><path d="M11 18.5h2"/>', calendar:'<rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 10h18M8 2.5v4M16 2.5v4"/><path d="M8 14h2M12 14h2M8 17h2"/>',
+  pen:'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14.5 6.5l3 3"/>', book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 21V5"/><path d="M9 8h6"/>',
+  clipboard:'<rect x="5" y="4" width="14" height="17" rx="2.5"/><rect x="9" y="2.5" width="6" height="3.5" rx="1.2"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/>', folder:'<path d="M3 7a2 2 0 012-2h4l2 2.5h8a2 2 0 012 2V18a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1.5 1.5 0 001.5 1.5h13A1.5 1.5 0 0020 19v-3"/>', shield:'<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  trophy:'<path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4"/><path d="M12 14v4M8 21h8M9 18h6"/>', id:'<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10.5" r="2.3"/><path d="M5.5 16.5c.6-1.8 2-2.7 3.5-2.7s2.9.9 3.5 2.7M15 9.5h3.5M15 13h3.5"/>',
+  briefcase:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 13h18"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>', sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/>',
+  cog:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>', chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', gift:'<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18M12 9c-3 0-5-1-5-3a2 2 0 013-1.5C11.5 5.5 12 9 12 9zM12 9c3 0 5-1 5-3a2 2 0 00-3-1.5C12.5 5.5 12 9 12 9z"/>',
+  bell:'<path d="M6 17V11a6 6 0 1112 0v6l1.5 2h-15z"/><path d="M10 21h4"/>', key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/>', cap:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5M22 9v6"/>', inbox:'<path d="M3 13l3-8h12l3 8v6a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 19z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
+  backup:'<path d="M7 18a4.5 4.5 0 01-.6-9 6 6 0 0111.4 1.5A3.7 3.7 0 0117.5 18z"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/>', sheet:'<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M4 9h16M4 15h16M10 3v18"/>', palette:'<path d="M12 3a9 9 0 100 18c1.5 0 2-1 1.5-2-.6-1.3.2-2.5 1.6-2.5H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15.5" cy="7.5" r="1.2"/>'
+};
+function gjIcon(name, size){ return '<svg viewBox="0 0 24 24" width="' + (size || 18) + '" height="' + (size || 18) + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (GJ_IC[name] || GJ_IC.folder) + '</svg>'; }
+const GJ_NAVIC = { teacherhome:['home','#f97316,#fb923c'], timetable:['clock','#06b6d4,#22d3ee'], planner:['book','#8b5cf6,#a78bfa'], dashboard:['home','#3b82f6,#60a5fa'], overview:['chart','#6366f1,#818cf8'], admission:['userplus','#10b981,#34d399'], students:['users','#0ea5e9,#38bdf8'],
+  payments:['card','#22c55e,#4ade80'], admissionfees:['ticket','#f59e0b,#fbbf24'], feedingfees:['utensils','#ef4444,#f87171'], messages:['chat','#ec4899,#f472b6'], 'messages-p':['phone','#14b8a6,#2dd4bf'], attendance:['calendar','#8b5cf6,#c084fc'], teacherscores:['pen','#f97316,#fdba74'],
+  assessments:['clipboard','#06b6d4,#67e8f9'], fees:['cash','#16a34a,#4ade80'], import:['upload','#0ea5e9,#7dd3fc'], backup:['backup','#64748b,#94a3b8'], academic:['trophy','#eab308,#fde047'], summary:['sheet','#6366f1,#a5b4fc'], idcards:['id','#f43f5e,#fb7185'],
+  teacheraccounts:['key','#a855f7,#c084fc'], staff:['briefcase','#14b8a6,#5eead4'], studentaccess:['shield','#0d9488,#2dd4bf'], settings:['cog','#475569,#94a3b8'] };
+function gjDecorateNav(){
+  document.querySelectorAll('.nav-item[data-view]').forEach(b => {
+    if (b.querySelector('.nav-ic')) return;
+    const d = GJ_NAVIC[b.dataset.view]; if (!d) return;
+    const [c1, c2] = d[1].split(',');
+    b.insertAdjacentHTML('afterbegin', '<span class="nav-ic" style="background:linear-gradient(135deg,' + c1 + ',' + c2 + ');">' + gjIcon(d[0], 16) + '</span>');
+  });
+}
+function gjDecorateTitles(){
+  document.querySelectorAll('.view .view-title').forEach(h => {
+    if (h.querySelector('.vt-ic')) return;
+    const v = h.closest('.view'); if (!v) return;
+    const d = GJ_NAVIC[v.id.replace('view-', '')]; if (!d) return;
+    const [c1, c2] = d[1].split(',');
+    h.insertAdjacentHTML('afterbegin', '<span class="vt-ic" style="background:linear-gradient(135deg,' + c1 + ',' + c2 + ');">' + gjIcon(d[0], 20) + '</span>');
+  });
+}
+/* ---------- fold long pages: every panel that starts with a heading becomes a tap-to-open card ---------- */
+const GJ_ACC_OPEN = {};
+function gjFold(){
+  const v = document.querySelector('.view.active'); if (!v) return;
+  const id = v.id.replace('view-', '');
+  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages'].includes(id)) return;
+  const panels = [...v.querySelectorAll(':scope > .panel, :scope > div > .panel')].filter(p => p.firstElementChild && p.firstElementChild.tagName === 'H3');
+  if (panels.length < 2) return;
+  panels.forEach((p, i) => {
+    const h = p.firstElementChild;
+    if (!h.dataset.acc){
+      h.dataset.acc = '1'; h.classList.add('acc-h'); p.classList.add('gj-acc');
+      const key = id + '|' + h.textContent.trim().slice(0, 40);
+      const open = GJ_ACC_OPEN[key] !== undefined ? GJ_ACC_OPEN[key] : (i === 0 && !['settings', 'staff', 'overview'].includes(id));
+      p.classList.toggle('gj-closed', !open);
+      h.addEventListener('click', () => { const c = p.classList.toggle('gj-closed'); GJ_ACC_OPEN[key] = !c; });
+    }
+  });
+}
+function gjLook2Init(){
+  gjDecorateNav(); gjDecorateTitles(); gjFold();
+  if (!window._gjFoldObs){
+    window._gjFoldObs = new MutationObserver(() => { clearTimeout(window._gjFoldT); window._gjFoldT = setTimeout(() => { gjDecorateTitles(); gjFold(); }, 120); });
+    const m = document.querySelector('main') || document.getElementById('app') || document.body;
+    window._gjFoldObs.observe(m, { childList: true, subtree: true });
+  }
+}
+
 try{ applyTheme(localStorage.getItem('gj_theme') || 'classic'); }catch(e){}
 
 /* ================================================================ GJ-AI: the "Basic" question writer (rule based, matches every answer to the notes) + AI key panel */
@@ -11446,7 +11611,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.09-d';
+const APP_VERSION = '2026.11.09-f';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
