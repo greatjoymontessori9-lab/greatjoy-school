@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- GJ-APP-PAGE -->
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -80,6 +81,16 @@
   .gate-note{font-size:12px;color:var(--text-dim);margin-top:18px;line-height:1.5;border-top:1px solid var(--line);padding-top:14px;}
   .gate-switch{background:none;border:none;color:var(--ink);text-decoration:underline;font-size:12.5px;padding:0;margin-top:14px;display:block;}
   #stu-frame{position:fixed;left:0;top:0;width:100%;height:100%;border:0;z-index:100000;background:#fff;display:none;}
+  /* Teacher Accounts: one drop-down per teacher */
+  details.ts-acc > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 0;}
+  details.ts-acc > summary::-webkit-details-marker{display:none;}
+  details.ts-acc > summary::after{content:'\25BE';margin-left:auto;font-size:18px;color:var(--text-dim);transition:transform .15s;}
+  details.ts-acc[open] > summary::after{transform:rotate(180deg);}
+  details.ts-acc .ts-av{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:1px solid var(--line);flex:0 0 auto;}
+  details.ts-acc .ts-sum-name{font-weight:700;font-size:15px;}
+  details.ts-acc .ts-body{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .ts-tools{display:flex;gap:8px;margin:0 0 10px;}
+  .ts-sec{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);margin:16px 0 6px;}
   /* centred sign-in page: round role buttons, underlined fields */
   #gate-login .gate-card{max-width:400px;padding:34px 30px 28px;}
   #gate-login .gate-card::before{display:none;}
@@ -770,12 +781,11 @@
     <div class="lg-youre">You're</div>
     <div class="role-toggle lg-roles">
       <button type="button" class="role-btn lg-role active" id="role-admin-btn" onclick="setLoginRole('admin')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span>Admin</span></button>
-      <button type="button" class="role-btn lg-role" id="role-cashier-btn" onclick="setLoginRole('cashier')"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span>Cashier</span></button>
-      <button type="button" class="role-btn lg-role" id="role-teacher-btn" onclick="setLoginRole('teacher')"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><span>Teacher</span></button>
-      <button type="button" class="role-btn lg-role" id="role-student-btn" onclick="openStudentApp()"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/></svg><span>Student</span></button>
+      <button type="button" class="role-btn lg-role" id="role-teacher-btn" onclick="setLoginRole('teacher')"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><span>Employees</span></button>
+      <button type="button" class="role-btn lg-role" id="role-student-btn" onclick="openStudentApp()"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/></svg><span>Students</span></button>
     </div>
     <div id="login-teacher-select-field" style="display:none;">
-      <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input type="text" id="login-user" placeholder="Your Username*" list="login-user-list" autocomplete="username" autocapitalize="words" oninput="onLoginUserInput()" onkeydown="if(event.key==='Enter'){var p=document.getElementById('login-pass');if(p)p.focus();}"></div>
+      <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input type="text" id="login-user" placeholder="Name or ID (type Cashier for the cashier)*" list="login-user-list" autocomplete="username" autocapitalize="words" oninput="onLoginUserInput()" onkeydown="if(event.key==='Enter'){var p=document.getElementById('login-pass');if(p)p.focus();}"></div>
       <datalist id="login-user-list"></datalist>
       <div id="login-teacher-tabs" style="display:none;"></div>
     </div>
@@ -804,7 +814,9 @@
     <img id="topbar-logo" src="" alt="" style="display:none;height:32px;width:32px;object-fit:contain;border-radius:3px;background:#fff;padding:2px;">
     <div class="school-name" id="topbar-school">School Management System</div>
     <button type="button" class="sync-pill" id="topbar-sync" onclick="syncPillClick()" style="display:none;"></button>
+    <img id="topbar-photo" src="" alt="" style="display:none;height:30px;width:30px;object-fit:cover;border-radius:50%;border:2px solid rgba(255,255,255,.7);">
     <span class="role-pill" id="topbar-role">ADMIN</span>
+    <button class="logout-btn" id="topbar-profile-btn" style="display:none;" onclick="openTeacherProfile(false)">My profile</button>
     <button class="logout-btn" id="topbar-pin-btn" style="display:none;" onclick="openProprietorPin()">Change PIN</button>
     <button class="logout-btn" onclick="doLogout()">Log out</button>
   </div>
@@ -1236,17 +1248,15 @@
         <div class="view-header">
           <div><h1 class="view-title">Teacher Accounts</h1><p class="view-sub">Create teacher logins and set exactly which classes and subjects each one can enter scores for.</p></div>
         </div>
-        <div class="panel">
-          <h3>Subjects list</h3>
+        <details class="panel ts-acc"><summary><span class="ts-sum-name">Subjects list</span></summary><div class="ts-body">
           <p class="hint">Add a subject here if it's missing below — it'll then be available for every teacher, and stays saved for next time. (Teachers can also add a subject themselves while entering scores for their own class; it shows up here automatically too.)</p>
           <div class="toolbar">
             <input type="text" id="new-custom-subject" placeholder="e.g. FRENCH" style="flex:1;min-width:160px;" onkeydown="if(event.key==='Enter')addCustomSubject();">
             <button class="btn btn-solid" onclick="addCustomSubject()">+ Add subject</button>
           </div>
           <div id="custom-subjects-list" style="margin-top:12px;"></div>
-        </div>
-        <div class="panel admin-only" id="sig-gallery-panel">
-          <h3>Signature gallery</h3>
+        </div></details>
+        <details class="panel ts-acc admin-only" id="sig-gallery-panel"><summary><span class="ts-sum-name">Signature gallery</span></summary><div class="ts-body">
           <p class="hint">Photograph or scan a sheet where staff have signed and add it here. Every signature is cut out as its own small picture. Delete the ones that are not signatures (such as printed names), then open a teacher below and tap <strong>Choose from gallery</strong>.</p>
           <div class="toolbar">
             <label class="btn btn-solid" style="cursor:pointer;margin:0;">+ Add photos<input type="file" accept="image/*" multiple style="display:none;" onchange="handleGalleryUpload(this)"></label>
@@ -1254,7 +1264,7 @@
             <button class="btn btn-sm" onclick="clearGallery()">Clear gallery</button>
           </div>
           <div id="sig-gallery-grid" style="display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;"></div>
-        </div>
+        </div></details>
         <div id="ct-panel"></div>
         <div class="panel">
           <h3>Teachers</h3>
@@ -1453,7 +1463,7 @@
         <div class="view-header">
           <div><h1 class="view-title">Settings</h1></div>
         </div>
-        <div class="panel"><h3>Look &amp; feel</h3><p class="hint">Pick a design for the whole app. The choice is saved for the school, so every staff member sees the same look on every device.</p><div id="theme-gallery"></div></div>
+        <div class="panel"><details class="ts-acc" id="theme-acc"><summary><h3 style="margin:0;">Look &amp; feel &mdash; design templates</h3><span class="hint" id="theme-cur" style="margin:0;"></span></summary><p class="hint" style="margin-top:12px;">Pick a design for the whole app. The choice is saved for the school, so every staff member sees the same look on every device.</p><div id="theme-gallery"></div></details></div>
         <div class="panel">
           <p class="hint" style="float:right;margin:0;">Version <span id="app-version"></span></p>
           <h3>School details</h3>
@@ -1564,6 +1574,34 @@
 
 <!-- Add/Edit teacher modal -->
 <div class="modal-overlay" id="tt-modal"><div class="modal" id="tt-modal-box" style="max-width:540px;max-height:88vh;overflow-y:auto;"></div></div>
+<div class="modal-overlay" id="tprof-overlay" style="z-index:9999;">
+  <div class="modal" style="max-width:470px;max-height:92vh;overflow:auto;">
+    <h2 id="tprof-title" style="margin:0 0 4px;">Your particulars</h2>
+    <p class="hint" id="tprof-intro" style="margin:0 0 12px;">Please fill in your details before you continue. Only the picture is optional.</p>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <img id="tprof-img" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:1px solid var(--line);">
+      <div><label style="font-size:12px;font-weight:700;">Profile picture (optional)</label><br>
+        <input type="file" id="tprof-file" accept="image/*" onchange="tprofPhoto(this)">
+        <button type="button" class="btn btn-sm" id="tprof-rm" style="display:none;" onclick="tprofRemovePhoto()">Remove picture</button></div>
+    </div>
+    <div class="field"><label>Gender *</label>
+      <select id="tprof-gender"><option value="">Choose…</option><option>Female</option><option>Male</option></select></div>
+    <div class="field"><label>Birthday * <span class="hint">(day and month only, no year)</span></label>
+      <div style="display:flex;gap:8px;">
+        <select id="tprof-day" style="flex:1;"><option value="">Day</option></select>
+        <select id="tprof-month" style="flex:2;"><option value="">Month</option></select></div></div>
+    <div class="field"><label>Telephone number 1 *</label><input type="tel" id="tprof-p1" placeholder="e.g. 0244123456"></div>
+    <div class="field"><label>Telephone number 2 *</label><input type="tel" id="tprof-p2" placeholder="e.g. 0201234567"></div>
+    <div id="tprof-extra"></div>
+    <button type="button" class="btn btn-sm" style="margin:-4px 0 12px;" onclick="tprofAddPhone('')">+ Add another number</button>
+    <div class="field"><label>Email *</label><input type="email" id="tprof-email" placeholder="you@example.com"></div>
+    <div id="tprof-err"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
+      <button type="button" class="btn" id="tprof-cancel" style="display:none;" onclick="closeTeacherProfile()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveTeacherProfile()">Save and continue</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="teacher-modal-overlay">
   <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto;">
     <h3 id="teacher-modal-title">Add teacher</h3>
@@ -1670,10 +1708,10 @@ const STORAGE_KEY = 'sfa_data_v1';
 /* Offline/desktop copy: put your script link and PIN here and the app connects to your school by itself,
    pulls the data and shows the login screen. Leave both empty for the normal online version. */
 const OFFLINE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwP74HSMUgEfeWCwzqdYWPW5LXXJWEHG77s_E1fLUQnZpkMuZNKSE7sNKBsLYiic_wO/exec';
-const OFFLINE_PIN = '';
+const OFFLINE_PIN = '7222';
 /* When the page is hosted on GitHub: the school script address is in this file, but the school PIN is NOT. Each device is asked for it once and remembers it. */
 let REMOTE_PIN = OFFLINE_PIN;
-if (OFFLINE_SCRIPT_URL && !REMOTE_PIN){
+if (OFFLINE_SCRIPT_URL && !REMOTE_PIN && !(window.google && window.google.script && window.google.script.run)){
   try{ REMOTE_PIN = localStorage.getItem('gj_remote_pin') || ''; }catch(e){}
   if (!REMOTE_PIN){
     REMOTE_PIN = (window.prompt('Enter the school PIN to open the app (ask the school admin):') || '').trim();
@@ -3065,7 +3103,6 @@ let loginRole = 'admin';
 function setLoginRole(r){
   loginRole = r;
   document.getElementById('role-admin-btn').classList.toggle('active', r==='admin');
-  document.getElementById('role-cashier-btn').classList.toggle('active', r==='cashier');
   document.getElementById('role-teacher-btn').classList.toggle('active', r==='teacher');
   document.getElementById('login-teacher-select-field').style.display = r==='teacher' ? 'block' : 'none';
   const so = document.getElementById('login-startover-btn'); if (so) so.style.display = r==='teacher' ? 'none' : '';
@@ -3140,7 +3177,7 @@ function populateTeacherLoginTabs(){
   if (!dl || !DATA || !DATA.teachers) return;
   if (loginRole !== 'teacher') return;
   if (ensureProprietor()) saveData();
-  dl.innerHTML = DATA.teachers.map(t => '<option value="' + escapeHtml(t.name || '') + '">').join('');
+  dl.innerHTML = '<option value="Cashier">' + DATA.teachers.map(t => '<option value="' + escapeHtml(t.name || '') + '">').join('');
   const wrap = document.getElementById('login-teacher-tabs');
   if (wrap){
     wrap.style.display = DATA.teachers.length ? 'none' : 'block';
@@ -3870,6 +3907,13 @@ function doLogin(){
   const pass = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
   errEl.innerHTML = '';
+  if (loginRole === 'teacher' && normUser(document.getElementById('login-user').value) === 'CASHIER'){
+    if (!pass){ errEl.innerHTML = '<div class="gate-error">Enter the cashier password.</div>'; return; }
+    if (pass !== DATA.auth.cashierPassword){ errEl.innerHTML = '<div class="gate-error">Incorrect password.</div>'; return; }
+    session.role = 'cashier'; sess.setItem('sfa_role', 'cashier');
+    document.getElementById('login-pass').value = '';
+    enterApp(); return;
+  }
   if (loginRole === 'teacher'){
     const rr = resolveLoginUser(true);
     if (rr === 'many'){ errEl.innerHTML = '<div class="gate-error">More than one account has that name — type your ID number instead.</div>'; return; }
@@ -3919,6 +3963,7 @@ function doLogout(){
   { const lu = document.getElementById('login-user'); if (lu) lu.value = ''; }
   session.role = null;
   sess.removeItem('sfa_role');
+  { const ph = document.getElementById('topbar-photo'); if (ph) ph.style.display = 'none'; const pb = document.getElementById('topbar-profile-btn'); if (pb) pb.style.display = 'none'; }
   document.getElementById('app').style.display = 'none';
   document.getElementById('gate-login').style.display = 'flex';
 }
@@ -3986,12 +4031,15 @@ function enterApp(){
   if (isTeacher){
     const t = DATA.teachers.find(x=>x.id===session.teacherId);
     document.getElementById('topbar-role').textContent = t ? t.name.toUpperCase() : 'TEACHER';
+    tprofTopbar();
     const summaryBtn = document.querySelector('.nav-item[data-view="summary"]');
     if (summaryBtn) summaryBtn.style.display = '';
     const attBtn = document.getElementById('nav-attendance');
     if (attBtn) attBtn.style.display = attendanceClassesForUser().length ? '' : 'none';
     showView('teacherhome');
+    if (t && !teacherProfileComplete(t)) openTeacherProfile(true);
   } else {
+    tprofTopbar();
     showView(isProp ? 'overview' : 'dashboard');
   }
   startPresence();
@@ -4426,6 +4474,100 @@ function saveStudentModal(){
   toast('Student saved.');
 }
 
+/* ---------- TEACHER PARTICULARS (first login) ---------- */
+const TPROF_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let tprofPhotoData = '', tprofForced = false;
+function tprofPhonesOf(t){ return (t.phones || []).filter(x => String(x || '').replace(/\D/g,'').length >= 7); }
+function teacherProfileComplete(t){
+  if (!t) return true;
+  return !!(t.gender && t.dobDay && t.dobMonth && tprofPhonesOf(t).length >= 2 && /^\S+@\S+\.\S+$/.test(String(t.email || '').trim()));
+}
+function teacherDobText(t){ return (t && t.dobDay && t.dobMonth) ? t.dobDay + ' ' + TPROF_MONTHS[t.dobMonth - 1] : ''; }
+function tprofAddPhone(v){
+  const w = document.getElementById('tprof-extra'), d = document.createElement('div');
+  d.className = 'field'; d.style.cssText = 'display:flex;gap:6px;align-items:center;';
+  d.innerHTML = '<input type="tel" class="tprof-more" placeholder="Another number" style="flex:1;"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentNode.remove()">Remove</button>';
+  d.firstChild.value = v || ''; w.appendChild(d);
+}
+function tprofFillPickers(){
+  const d = document.getElementById('tprof-day'), m = document.getElementById('tprof-month');
+  if (d.options.length < 2) for (let i = 1; i <= 31; i++) d.add(new Option(i, i));
+  if (m.options.length < 2) TPROF_MONTHS.forEach((n, i) => m.add(new Option(n, i + 1)));
+}
+function openTeacherProfile(forced){
+  const t = getTeacherObj(); if (!t) return;
+  tprofForced = !!forced; tprofFillPickers();
+  tprofPhotoData = t.photo || '';
+  document.getElementById('tprof-gender').value = t.gender || '';
+  document.getElementById('tprof-day').value = t.dobDay || '';
+  document.getElementById('tprof-month').value = t.dobMonth || '';
+  document.getElementById('tprof-p1').value = (t.phones || [])[0] || '';
+  document.getElementById('tprof-p2').value = (t.phones || [])[1] || '';
+  document.getElementById('tprof-email').value = t.email || '';
+  document.getElementById('tprof-extra').innerHTML = '';
+  (t.phones || []).slice(2).forEach(x => tprofAddPhone(x));
+  document.getElementById('tprof-err').innerHTML = '';
+  document.getElementById('tprof-title').textContent = forced ? 'Welcome, ' + t.name : 'My profile';
+  document.getElementById('tprof-intro').style.display = forced ? '' : 'none';
+  document.getElementById('tprof-cancel').style.display = forced ? 'none' : '';
+  tprofShowPhoto();
+  document.getElementById('tprof-overlay').classList.add('active');
+}
+function closeTeacherProfile(){ if (tprofForced) return; document.getElementById('tprof-overlay').classList.remove('active'); }
+function tprofShowPhoto(){
+  const img = document.getElementById('tprof-img');
+  img.src = tprofPhotoData || 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#e5e7eb"/><circle cx="32" cy="25" r="11" fill="#9ca3af"/><ellipse cx="32" cy="56" rx="20" ry="16" fill="#9ca3af"/></svg>');
+  document.getElementById('tprof-rm').style.display = tprofPhotoData ? '' : 'none';
+}
+function tprofRemovePhoto(){ tprofPhotoData = ''; document.getElementById('tprof-file').value = ''; tprofShowPhoto(); }
+function tprofPhoto(inp){
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const n = 160, c = document.createElement('canvas'); c.width = n; c.height = n;
+      const sz = Math.min(im.width, im.height), sx = (im.width - sz) / 2, sy = (im.height - sz) / 2;
+      c.getContext('2d').drawImage(im, sx, sy, sz, sz, 0, 0, n, n);
+      tprofPhotoData = c.toDataURL('image/jpeg', 0.75); tprofShowPhoto();
+    };
+    im.onerror = () => { document.getElementById('tprof-err').innerHTML = '<div class="gate-error">That file is not a picture.</div>'; };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+}
+function saveTeacherProfile(){
+  const t = getTeacherObj(); if (!t) return;
+  const g = document.getElementById('tprof-gender').value, d = +document.getElementById('tprof-day').value, m = +document.getElementById('tprof-month').value;
+  const p1 = document.getElementById('tprof-p1').value.trim(), p2 = document.getElementById('tprof-p2').value.trim();
+  const em = document.getElementById('tprof-email').value.trim();
+  const err = x => { document.getElementById('tprof-err').innerHTML = '<div class="gate-error">' + x + '</div>'; };
+  if (!g) return err('Choose your gender.');
+  if (!d || !m) return err('Choose your birthday day and month.');
+  const dim = [31,29,31,30,31,30,31,31,30,31,30,31][m - 1];
+  if (d > dim) return err('That day does not exist in ' + TPROF_MONTHS[m - 1] + '.');
+  if (p1.replace(/\D/g,'').length < 7 || p2.replace(/\D/g,'').length < 7) return err('Enter two telephone numbers.');
+    const more = Array.from(document.querySelectorAll('.tprof-more')).map(x => x.value.trim()).filter(Boolean);
+  if (more.some(x => x.replace(/\D/g,'').length < 7)) return err('One of the extra numbers is too short.');
+  const allP = [p1, p2].concat(more);
+  if (new Set(allP.map(x => x.replace(/\D/g,''))).size !== allP.length) return err('Each telephone number must be different.');
+  if (!/^\S+@\S+\.\S+$/.test(em)) return err('Enter a valid email address.');
+  t.gender = g; t.dobDay = d; t.dobMonth = m; t.phones = allP; t.phone = allP[0]; t.email = em; t.photo = tprofPhotoData || '';
+  document.getElementById('tprof-err').innerHTML = '';
+  t.profileAt = new Date().toISOString(); t.updatedAt = t.profileAt;
+  saveData();
+  tprofForced = false;
+  document.getElementById('tprof-overlay').classList.remove('active');
+  tprofTopbar();
+  toast('Your details are saved.');
+}
+function tprofTopbar(){
+  const img = document.getElementById('topbar-photo'); if (!img) return;
+  const t = session.role === 'teacher' ? getTeacherObj() : null;
+  if (t && t.photo){ img.src = t.photo; img.style.display = ''; } else { img.style.display = 'none'; }
+  const b = document.getElementById('topbar-profile-btn'); if (b) b.style.display = t ? '' : 'none';
+}
+
 /* ---------- TEACHER MANAGEMENT (admin) ---------- */
 let teacherModalAllocations = [];
 function openTeacherModal(id){
@@ -4718,24 +4860,88 @@ function teacherSetupBlockHtml(teacher){
   const removeBtn = teacher
     ? `<button class="btn btn-sm btn-danger" onclick="deleteTeacherBlock('${teacher.id}', this)">Remove teacher</button>`
     : `<button class="btn btn-sm btn-danger" onclick="this.closest('[data-teacher-block]').remove()">Remove</button>`;
+  const tel = (teacher && teacher.phones) || [];
+  const dayOpts = '<option value="">Day</option>' + Array.from({length:31}, (_, i) => `<option value="${i+1}"${teacher && teacher.dobDay === i+1 ? ' selected' : ''}>${i+1}</option>`).join('');
+  const monOpts = '<option value="">Month</option>' + TPROF_MONTHS.map((m, i) => `<option value="${i+1}"${teacher && teacher.dobMonth === i+1 ? ' selected' : ''}>${m}</option>`).join('');
+  const avatar = (teacher && teacher.photo) ? imgSrc(teacher.photo) : 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#e5e7eb"/><circle cx="32" cy="25" r="11" fill="#9ca3af"/><ellipse cx="32" cy="56" rx="20" ry="16" fill="#9ca3af"/></svg>');
+  const profBadge = teacher ? (teacherProfileComplete(teacher) ? '<span class="status-badge status-paid">Profile filled</span>' : '<span class="status-badge status-owing">Profile not filled</span>') : '';
+  const isOpen = !teacher || teacherSetupOpen.has(blockId);
   return `
-  <div class="panel" style="border-left:3px solid var(--gold);" data-teacher-block="${blockId}" data-existing-id="${teacher?teacher.id:''}">
+  <details class="panel ts-acc" style="border-left:3px solid var(--gold);" data-teacher-block="${blockId}" data-existing-id="${teacher?teacher.id:''}" ${isOpen ? 'open' : ''} ontoggle="tsToggled(this)">
+    <summary>
+      <img class="ts-av" src="${avatar}" alt="">
+      <span class="ts-sum-name">${teacher ? escapeHtml(name) : 'New teacher'}</span>
+      ${idBadge}${passwordBadge}${profBadge}
+    </summary>
+    <div class="ts-body">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
       <div class="field" style="flex:1;min-width:200px;max-width:320px;margin-bottom:0;">
         <label>Name</label>
         <input type="text" class="ts-name" value="${escapeHtml(name)}" placeholder="Teacher's full name">
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">${passwordBadgeFull}${resetBtn}${removeBtn}</div>
+      <div style="display:flex;gap:8px;align-items:center;">${resetBtn}${removeBtn}</div>
     </div>
-    ${teacher ? teacherSignatureBlockHtml(teacher) : '<p class="hint" style="margin:12px 0 0;">Save this teacher first, then you can add their signature and make them head teacher.</p>'}
-    <h3 style="font-size:13px;margin:14px 0 6px;">Classes taught</h3>
+    <div class="ts-sec">Profile (used for the ID card)</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img class="ts-photo-prev" src="${avatar}" alt="" style="width:54px;height:54px;border-radius:50%;object-fit:cover;background:#e5e7eb;border:1px solid var(--line);">
+        <div><label class="btn btn-sm" style="cursor:pointer;margin:0;">Picture<input type="file" accept="image/*" style="display:none;" onchange="tsPhotoPick(this)"></label>
+        <button type="button" class="btn btn-sm" onclick="tsPhotoClear(this)">Remove</button></div>
+      </div>
+      <div class="field" style="margin-bottom:0;"><label>Gender</label>
+        <select class="ts-gender"><option value="">Not set</option><option${teacher && teacher.gender === 'Female' ? ' selected' : ''}>Female</option><option${teacher && teacher.gender === 'Male' ? ' selected' : ''}>Male</option></select></div>
+      <div class="field" style="margin-bottom:0;"><label>Birthday</label>
+        <div style="display:flex;gap:6px;"><select class="ts-day">${dayOpts}</select><select class="ts-month">${monOpts}</select></div></div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;">
+      <div class="field" style="margin-bottom:0;flex:1;min-width:170px;"><label>Telephone 1</label><input type="tel" class="ts-p1" value="${escapeHtml(tel[0] || '')}" placeholder="0244123456"></div>
+      <div class="field" style="margin-bottom:0;flex:1;min-width:170px;"><label>Telephone 2</label><input type="tel" class="ts-p2" value="${escapeHtml(tel[1] || '')}" placeholder="0201234567"></div>
+      <div class="field" style="margin-bottom:0;flex:2;min-width:220px;"><label>Email</label><input type="email" class="ts-email" value="${escapeHtml((teacher && teacher.email) || '')}" placeholder="name@example.com"></div>
+    </div>
+    <div class="hint" style="margin:6px 0 0;">Teachers can also fill this in themselves from the picture at the top of their page. Extra phone numbers they add are kept.</div>
+    <div class="ts-sec">Signature and head teacher</div>
+    ${teacher ? teacherSignatureBlockHtml(teacher) : '<p class="hint" style="margin:0;">Save this teacher first, then you can add their signature and make them head teacher.</p>'}
+    <div class="ts-sec">Classes taught</div>
     ${teacherSetupClassCheckboxesHtml(blockId, 'class', taughtPairs)}
-    <h3 style="font-size:13px;margin:14px 0 6px;">Subjects taught</h3>
+    <div class="ts-sec">Subjects taught</div>
     <div>${teacherSetupSubjectCheckboxesHtml(taughtSubjects)}</div>
-    <h3 style="font-size:13px;margin:14px 0 6px;">Class teacher (full access) for</h3>
+    <div class="ts-sec">Class teacher (full access) for</div>
     ${teacherSetupClassCheckboxesHtml(blockId, 'ct', ctPairs)}
     <div class="ts-ct-preview"></div>
-  </div>`;
+    </div>
+  </details>`;
+}
+let teacherSetupOpen = new Set();
+function tsToggled(d){ const id = d.getAttribute('data-teacher-block'); if (!id) return; if (d.open) teacherSetupOpen.add(id); else teacherSetupOpen.delete(id); }
+function tsAll(open){ document.querySelectorAll('details.ts-acc').forEach(d => { d.open = open; }); }
+function tsPhotoPick(inp){
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const block = inp.closest('[data-teacher-block]');
+  const fr = new FileReader();
+  fr.onload = () => { const im = new Image(); im.onload = () => {
+    const n = 160, c = document.createElement('canvas'); c.width = n; c.height = n;
+    const sz = Math.min(im.width, im.height), sx = (im.width - sz) / 2, sy = (im.height - sz) / 2;
+    c.getContext('2d').drawImage(im, sx, sy, sz, sz, 0, 0, n, n);
+    const data = c.toDataURL('image/jpeg', 0.75);
+    block.dataset.photo = data; block.querySelector('.ts-photo-prev').src = data; block.querySelector('.ts-av').src = data;
+  }; im.onerror = () => toast('That file is not a picture.'); im.src = fr.result; };
+  fr.readAsDataURL(f);
+}
+function tsPhotoClear(btn){
+  const block = btn.closest('[data-teacher-block]'); block.dataset.photo = 'REMOVE';
+  const blank = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#e5e7eb"/><circle cx="32" cy="25" r="11" fill="#9ca3af"/><ellipse cx="32" cy="56" rx="20" ry="16" fill="#9ca3af"/></svg>');
+  block.querySelector('.ts-photo-prev').src = blank; block.querySelector('.ts-av').src = blank;
+}
+function tsApplyProfile(t, block){
+  const g = (block.querySelector('.ts-gender') || {}).value; if (g !== undefined) t.gender = g || t.gender || '';
+  const d = +(block.querySelector('.ts-day') || {}).value, m = +(block.querySelector('.ts-month') || {}).value;
+  if (d && m){ t.dobDay = d; t.dobMonth = m; }
+  const p1 = ((block.querySelector('.ts-p1') || {}).value || '').trim(), p2 = ((block.querySelector('.ts-p2') || {}).value || '').trim();
+  const rest = (t.phones || []).slice(2);
+  const ph = [p1, p2].filter(Boolean);
+  if (ph.length){ t.phones = ph.concat(rest); t.phone = ph[0]; }
+  const em = ((block.querySelector('.ts-email') || {}).value || '').trim(); if (em) t.email = em;
+  const ph0 = block.dataset.photo; if (ph0 === 'REMOVE') t.photo = ''; else if (ph0) t.photo = ph0;
 }
 
 /* ---------- Signatures (tied to the teacher's ID; picked automatically on report cards) ---------- */
@@ -4915,7 +5121,7 @@ function renderTeacherSetupPage(){
   if (realT.length === 0){
     wrap.innerHTML = propHtml + teacherSetupBlockHtml(null);
   } else {
-    wrap.innerHTML = propHtml + realT.map(t => teacherSetupBlockHtml(t)).join('');
+    wrap.innerHTML = propHtml + '<div class="ts-tools"><button type="button" class="btn btn-sm" onclick="tsAll(true)">Open all</button><button type="button" class="btn btn-sm" onclick="tsAll(false)">Close all</button></div>' + realT.map(t => teacherSetupBlockHtml(t)).join('');
   }
   wrap.querySelectorAll('[data-teacher-block]').forEach(b => { const box = b.querySelector('.ts-ct-preview'); if (box) box.innerHTML = classTeacherPreviewHtml(b); });
   renderCustomSubjectsList();
@@ -4990,10 +5196,13 @@ function saveAllTeacherSetup(){
       const t = DATA.teachers.find(x=>x.id===existingId);
       t.name = name;
       t.allocations = allocations;
+      tsApplyProfile(t, block);
       t.updatedAt = new Date().toISOString();
     } else {
       const now = new Date().toISOString();
-      DATA.teachers.push({ id: uid(), name, password: null, createdAt: now, updatedAt: now, allocations });
+      const nt = { id: uid(), name, password: null, createdAt: now, updatedAt: now, allocations, gender: '' };
+      tsApplyProfile(nt, block);
+      DATA.teachers.push(nt);
     }
     savedCount++;
   });
@@ -10476,6 +10685,7 @@ function gjMini(t){
 function renderThemeGallery(){
   const el = document.getElementById('theme-gallery'); if (!el) return;
   const cur = (DATA.uiTheme || 'classic'), admin = session.role === 'admin';
+  { const tc = document.getElementById('theme-cur'), tt = GJ_THEMES.find(t => t.id === cur); if (tc) tc.textContent = tt ? 'In use: ' + tt.name : ''; }
   el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;">' + GJ_THEMES.map(t => {
     const on = t.id === cur;
     return '<div onclick="' + (admin ? 'themeChoose(\'' + t.id + '\')' : '') + '" style="cursor:' + (admin ? 'pointer' : 'default') + ';border:2px solid ' + (on ? 'var(--gold)' : 'var(--line)') + ';border-radius:12px;padding:8px;background:var(--panel);' + (on ? 'box-shadow:0 0 0 3px ' + gjTint(t.accent, .25) + ';' : '') + '">'
@@ -10822,7 +11032,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.08-b';
+const APP_VERSION = '2026.11.09-b';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
