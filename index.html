@@ -82,6 +82,17 @@
   .gate-switch{background:none;border:none;color:var(--ink);text-decoration:underline;font-size:12.5px;padding:0;margin-top:14px;display:block;}
   #stu-frame{position:fixed;left:0;top:0;width:100%;height:100%;border:0;z-index:100000;background:#fff;display:none;}
   /* Teacher Accounts: one drop-down per teacher */
+  .emp-sec{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;margin:16px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .emp-num{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;align-items:center;justify-content:center;font-size:13px;}
+  .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;} .emp-grid .field{margin:0;} .req{color:#e11d48;}
+  .emp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;} .emp-card{border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center;background:var(--paper);}
+  .emp-card img,.emp-card .emp-av{width:84px;height:84px;border-radius:50%;object-fit:cover;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 8px;}
+  .bell-n{position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;line-height:1.3;}
+  #topbar-bell{position:relative;background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px;}
+  .bday-card{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(90deg,#fff7d6,#ffe3ec);border:1px solid #f4c7d3;color:#5b2a3b;border-radius:12px;padding:10px 14px;margin:0 0 12px;}
+  .bday-card img{width:44px;height:44px;border-radius:50%;object-fit:cover;} .bday-ico{font-size:30px;}
+  .msg-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--paper);}
+  .msg-row.unread{border-left:4px solid var(--gold);background:var(--paper-2);} .msg-row.bday{background:#fff7f0;}
   details.ts-acc > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 0;}
   details.ts-acc > summary::-webkit-details-marker{display:none;}
   details.ts-acc > summary::after{content:'\25BE';margin-left:auto;font-size:18px;color:var(--text-dim);transition:transform .15s;}
@@ -815,6 +826,7 @@
     <div class="school-name" id="topbar-school">School Management System</div>
     <button type="button" class="sync-pill" id="topbar-sync" onclick="syncPillClick()" style="display:none;"></button>
     <img id="topbar-photo" src="" alt="" style="display:none;height:30px;width:30px;object-fit:cover;border-radius:50%;border:2px solid rgba(255,255,255,.7);">
+    <button type="button" id="topbar-bell" style="display:none;" title="Messages" onclick="showView('messages')">🔔</button>
     <span class="role-pill" id="topbar-role">ADMIN</span>
     <button class="logout-btn" id="topbar-profile-btn" style="display:none;" onclick="openTeacherProfile(false)">My profile</button>
     <button class="logout-btn" id="topbar-pin-btn" style="display:none;" onclick="openProprietorPin()">Change PIN</button>
@@ -834,6 +846,8 @@
       <button class="nav-item" data-view="payments" onclick="showView('payments')">Payments</button>
       <button class="nav-item" data-view="admissionfees" onclick="showView('admissionfees')">Admission Fee</button>
       <button class="nav-item" data-view="feedingfees" onclick="showView('feedingfees')">Feeding Fee</button>
+      <button class="nav-item" id="nav-messages" data-view="messages" onclick="msgGo('inbox')">Messaging</button>
+      <button class="nav-item" id="nav-sms" data-view="messages-p" onclick="msgGo('parents')">SMS &amp; WhatsApp</button>
       <button class="nav-item" id="nav-attendance" data-view="attendance" onclick="showView('attendance')">Attendance</button>
       <button class="nav-item teacher-only" data-view="teacherscores" onclick="showView('teacherscores')" style="display:none;">Enter Scores</button>
       <button class="nav-item" id="nav-assessments" data-view="assessments" onclick="showView('assessments')" style="display:none;">Homework &amp; Tests</button>
@@ -854,6 +868,8 @@
 
     <div class="content">
 
+      <div id="bday-bar"></div>
+
       <!-- DASHBOARD -->
       <div class="view active" id="view-dashboard">
         <div class="view-header">
@@ -866,6 +882,15 @@
         </div>
       </div>
 
+      <!-- MESSAGES -->
+      <div class="view" id="view-messages">
+        <div class="view-header">
+          <div><h1 class="view-title">Messages</h1><p class="view-sub">Staff messages, birthday wishes, and SMS or WhatsApp to parents.</p></div>
+          <button class="btn vo-keep" id="msg-alert-btn" style="display:none;" onclick="msgAskAlerts()">Turn on alerts</button>
+        </div>
+        <div id="msg-root"></div>
+      </div>
+
       <!-- OVERVIEW (proprietor / admin monitoring) -->
       <div class="view" id="view-overview">
         <div class="view-header">
@@ -873,6 +898,7 @@
           <button class="btn vo-keep" onclick="renderOverview()">Refresh</button>
         </div>
         <div class="stat-grid" id="ov-stats"></div>
+        <div class="panel"><h3>Birthdays 🎂</h3><div id="ov-bday"></div></div>
         <div class="panel"><h3>Who is using the app</h3><div id="ov-online"></div></div>
         <div class="panel"><h3>Teachers - score entry progress</h3><div id="ov-teachers"></div></div>
         <div class="panel"><h3>Class registers (attendance)</h3><div id="ov-attendance"></div></div>
@@ -1201,22 +1227,38 @@
           <div><button class="btn" onclick="printStaffList()">Print staff list</button></div>
         </div>
         <div class="panel admin-only" id="staff-form-panel">
-          <h3 style="margin:0 0 8px;font-size:14px;" id="staff-form-title">Add non-teaching staff</h3>
+          <h3 style="margin:0 0 4px;font-size:16px;" id="staff-form-title">Add new employee</h3>
           <input type="hidden" id="staff-edit-id"><input type="hidden" id="staff-edit-kind">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-            <div class="field" style="flex:1;min-width:200px;margin:0;"><label>Full name</label><input type="text" id="staff-name" placeholder="e.g. Madam Abena"></div>
-            <div class="field" style="flex:1;min-width:170px;margin:0;"><label>Position</label>
-              <input type="text" id="staff-position" list="staff-position-list" placeholder="Pick or type, e.g. Cook"><datalist id="staff-position-list"></datalist></div>
-            <div class="field" style="flex:1;min-width:150px;margin:0;"><label>Phone (optional)</label><input type="text" id="staff-phone" placeholder="e.g. 024 000 0000"></div>
-            <div class="field" style="flex:1;min-width:150px;margin:0;" id="staff-emis-field"><label>EMIS code (teachers)</label><input type="text" id="staff-emis" placeholder="Teaching staff only" disabled></div>
-            <div class="field" style="min-width:150px;margin:0;"><label>Photo (for ID card)</label>
-              <input type="file" id="staff-photo" accept="image/*" onchange="handleStaffPhoto(this)"></div>
-            <div id="staff-photo-preview" style="width:48px;height:56px;border:1px solid var(--line,#ccc);border-radius:4px;overflow:hidden;"></div>
-            <button class="btn btn-solid" onclick="saveStaff()">Save staff</button>
-            <button class="btn" id="staff-cancel-btn" style="display:none;" onclick="resetStaffForm()">Cancel</button>
+          <div class="emp-sec"><span class="emp-num">1</span> Basic information <span class="hint" style="margin:0 0 0 auto;"><span style="color:#e11d48;">●</span> Required</span></div>
+          <div class="emp-grid">
+            <div class="field"><label>Employee name <span class="req">*</span></label><input type="text" id="staff-name" placeholder="Name of employee"></div>
+            <div class="field"><label>Mobile no. for SMS / WhatsApp</label><input type="text" id="staff-phone" placeholder="e.g. 024 000 0000"></div>
+            <div class="field"><label>Employee role <span class="req">*</span></label><input type="text" id="staff-position" list="staff-position-list" placeholder="-- Select or type role --"><datalist id="staff-position-list"></datalist></div>
+            <div class="field"><label>Picture</label><input type="file" id="staff-photo" accept="image/*" onchange="handleStaffPhoto(this)"><div id="staff-photo-preview" style="width:48px;height:56px;border:1px solid var(--line,#ccc);border-radius:4px;overflow:hidden;margin-top:4px;"></div></div>
+            <div class="field"><label>Date of joining <span class="req">*</span></label><input type="date" id="staff-join"></div>
+            <div class="field"><label>Monthly salary</label><input type="number" id="staff-salary" min="0" step="0.01" placeholder="Monthly salary"></div>
           </div>
-          <p class="hint" style="margin:8px 0 0;">The ID number is given automatically. Teachers are added in Teacher Accounts; use Edit on their row here to add a phone number, EMIS code or photo. A teacher's position comes from their classes and subjects.</p>
+          <div class="emp-sec"><span class="emp-num">2</span> Other information</div>
+          <div class="emp-grid">
+            <div class="field"><label>Father / husband name</label><input type="text" id="staff-father" placeholder="Father / husband name"></div>
+            <div class="field"><label>Gender</label><select id="staff-gender"><option value="">-- Select --</option><option>Male</option><option>Female</option></select></div>
+            <div class="field"><label>Experience</label><input type="text" id="staff-exp" placeholder="e.g. 5 years"></div>
+            <div class="field"><label>National ID</label><input type="text" id="staff-nid" placeholder="National ID"></div>
+            <div class="field"><label>Religion</label><select id="staff-religion"><option value="">-- Select --</option><option>Christian</option><option>Muslim</option><option>Traditional</option><option>Other</option></select></div>
+            <div class="field"><label>Email address</label><input type="email" id="staff-email" placeholder="Email address"></div>
+            <div class="field"><label>Education</label><input type="text" id="staff-edu" placeholder="Education"></div>
+            <div class="field"><label>Blood group</label><select id="staff-blood"><option value="">-- Select --</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+            <div class="field"><label>Date of birth</label><input type="date" id="staff-dob"></div>
+            <div class="field" id="staff-emis-field"><label>EMIS code (teachers)</label><input type="text" id="staff-emis" placeholder="Teaching staff only" disabled></div>
+            <div class="field" style="grid-column:1/-1;"><label>Home address</label><input type="text" id="staff-address" placeholder="Home address"></div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn" id="staff-cancel-btn" onclick="resetStaffForm()">&#8635; Reset</button>
+            <button class="btn btn-solid" onclick="saveStaff()">&#10003; Submit</button>
+          </div>
+          <p class="hint" style="margin:8px 0 0;">The ID number is given automatically. Teachers are added in Teacher Accounts (that is where they log in); use Edit on their card to fill in the rest here. A birthday set here also feeds the birthday alerts.</p>
         </div>
+        <div class="panel"><div id="staff-cards"></div></div>
         <div class="panel">
           <div class="toolbar">
             <input type="text" id="staff-search" placeholder="Search name, ID or position…" oninput="renderStaffView()" style="flex:1;min-width:180px;">
@@ -1921,7 +1963,7 @@ function saveData(){
 /* ---------- Online Sync (Google Apps Script) ---------- */
 let syncInProgress = false;
 let syncTimerHandle = null;
-const SYNC_RECORD_SHEETS = ['Students','Payments','AdmissionPayments','FeedingBilling','FeedingPayments','Teachers','Attendance','TermParts'];
+const SYNC_RECORD_SHEETS = ['Students','Payments','AdmissionPayments','FeedingBilling','FeedingPayments','Teachers','Attendance','TermParts','Messages'];
 
 function markMetaDirty(key){
   DATA.sync.metaUpdatedAt[key] = new Date().toISOString();
@@ -2296,6 +2338,7 @@ function acadApplyUnits(mergedUnits){
 let syncLast = { state: 'idle', msg: '' };
 function setSyncState(state, msg){ syncLast = { state, msg: msg || '' }; renderSyncPill(); }
 function renderSyncPill(){
+  try{ if (session.role && DATA && DATA.teachers){ bdayEnsureMessages(); msgBell(); renderBdayBar(); } }catch(e){}
   const el = document.getElementById('topbar-sync');
   if (!el) return;
   if (!(DATA && DATA.sync && DATA.sync.enabled)){ el.style.display = 'none'; return; }
@@ -2378,6 +2421,7 @@ async function performSync(silent, force){
 
     // Academic units (derived + stamped before we look at the server)
     if (!DATA.attendance) DATA.attendance = [];
+    if (!DATA.messages) DATA.messages = [];
     normalizeClassNames();
     const localUnits = acadDeriveUnits();
     acadStampUnits(localUnits);
@@ -2393,6 +2437,7 @@ async function performSync(silent, force){
       FeedingPayments: DATA.registries.feeding.payments,
       Teachers: DATA.teachers,
       Attendance: DATA.attendance,
+      Messages: DATA.messages,
       TermParts: termsToParts()
     };
     const mergedByCollection = {};
@@ -2433,6 +2478,7 @@ async function performSync(silent, force){
     DATA.registries.feeding.payments = mergedByCollection.FeedingPayments;
     DATA.teachers = mergedByCollection.Teachers;
     DATA.attendance = mergedByCollection.Attendance;
+    DATA.messages = mergedByCollection.Messages;
     DATA.terms = partsToTerms(mergedByCollection.TermParts);
     reconcileReceiptCounter();
     normalizeClassNames();
@@ -2837,7 +2883,7 @@ async function connectToExistingLedger(){
 const PROPRIETOR_ID = 'proprietor';
 const PROPRIETOR_NAME = 'Ebenezer Okine';
 const PROPRIETOR_DEFAULT_PIN = '7272';
-const PROP_VIEWS = ['overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
+const PROP_VIEWS = ['messages','messages-p','overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
 let voBypass = false;
 function isProprietorRec(t){ return !!t && (t.isProprietor === true || t.id === PROPRIETOR_ID); }
 /* The proprietor lives in the teachers list (so it syncs like every other login). The stand-in copy is stamped as
@@ -2996,6 +3042,15 @@ function ovRoster(cls){ return DATA.students.filter(s => (!s.status || s.status=
 
 /* ---------- Overview: teacher score entry as progress cards ---------- */
 let OV_TF = { f:'all', q:'' };
+function ovAttFor(classes){
+  // class register kept (days recorded / school days so far this term) and pupils present (present / marked)
+  const cal = attendanceCalendar(); if (!cal || cal.error || !classes.length) return null;
+  const today = todayStr(), days = new Set(); cal.weeks.forEach(w => w.forEach(d => { if (d.status === 'school' && d.date <= today) days.add(d.date); }));
+  if (!days.size) return null;
+  let rec = 0, exp = 0, pres = 0, marked = 0;
+  classes.forEach(c => { const key = attClassKey(c); exp += days.size; (DATA.attendance || []).forEach(r => { if (r.classKey === key && days.has(r.date)){ rec++; pres += (r.present || []).length; marked += (r.present || []).length + (r.absent || []).length; } }); });
+  return { kept: exp ? Math.min(100, Math.round(rec / exp * 100)) : 0, present: marked ? Math.round(pres / marked * 100) : null, days: rec, of: exp };
+}
 function ovTeacherData(){
   return (DATA.teachers || []).filter(t => !isProprietorRec(t)).map(t => {
     const items = (t.allocations || []).filter(a => a.subject !== '*').map(a => {
@@ -3008,9 +3063,323 @@ function ovTeacherData(){
     const done = items.reduce((n, i) => n + i.done, 0), tot = items.reduce((n, i) => n + i.tot, 0);
     const complete = items.filter(i => i.tot && i.done === i.tot).length;
     const status = !items.length ? 'none' : (tot && done === tot) ? 'complete' : done ? 'progress' : 'notstarted';
-    return { t, items, done, tot, pct: tot ? Math.round(done / tot * 100) : 0, complete, status, cts:(t.allocations || []).filter(a => a.subject === '*').map(a => a.class) };
+    const cts = (t.allocations || []).filter(a => a.subject === '*').map(a => a.class);
+    return { t, items, done, tot, pct: tot ? Math.round(done / tot * 100) : 0, complete, status, cts, att: ovAttFor(cts) };
   });
 }
+/* ================================================================ MESSAGES, BIRTHDAYS, PARENT SMS / WHATSAPP */
+const BDAY_WISHES = [
+  'Happy birthday! May this new year of your life bring you good health, joy and every blessing you are praying for. 🎉',
+  'Wishing you a wonderful birthday! Thank you for the love and care you give our children every day. 🎂',
+  'Happy birthday to a treasured member of our school family! May God keep you strong and smiling. 🌟',
+  'Many happy returns of the day! May your year ahead be full of peace, progress and plenty of laughter. 🎈',
+  'It\'s your special day! We celebrate you and all that you do for Great Joy. Enjoy every moment! 🥳',
+  'Happy birthday! May favour follow you everywhere you go this year. 🙏',
+  'Another year wiser and more wonderful. Happy birthday from all of us! 🎁',
+  'Warm birthday wishes to you! You make our school a better place. Have a beautiful day. 💐',
+  'Happy birthday! May all your hard work be rewarded and your heart be full of joy. ✨',
+  'Cheers to you on your birthday! Wishing you long life, good health and happiness. 🥂',
+  'Happy birthday, colleague and friend! May this year be your best one yet. 🎊',
+  'On your birthday we say thank you for your dedication. May God bless you abundantly. 💛'
+];
+function bdayWish(){ return BDAY_WISHES[Math.floor(Math.random() * BDAY_WISHES.length)]; }
+function msgMe(){
+  if (session.role === 'teacher') return { id: session.teacherId, name: (getTeacherObj() || {}).name || 'Teacher', kind: 'teacher' };
+  if (session.role === 'proprietor'){ const p = getProprietor(); return { id: (p && p.id) || 'proprietor', name: (p && p.name) || 'Proprietor', kind: 'proprietor' }; }
+  if (session.role === 'cashier') return { id: 'cashier', name: 'Cashier', kind: 'cashier' };
+  return { id: 'admin', name: 'Admin', kind: 'admin' };
+}
+function msgVisible(m){
+  const me = msgMe();
+  if (m.from === me.id || m.to === 'all' || m.to === me.id) return true;
+  if (m.to === 'teachers' && (me.kind === 'teacher' || me.kind === 'proprietor' || me.kind === 'admin')) return true;
+  return false;
+}
+function msgFresh(m){ return m.kind !== 'birthday' || (Date.now() - new Date(m.createdAt).getTime()) < 86400000; }   // birthday notes vanish after 24 hours
+function msgList(){ return (DATA.messages || []).filter(msgFresh).filter(msgVisible).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); }
+function msgSeenKey(){ return 'gj_msgseen_' + msgMe().id; }
+function msgSeen(){ try{ return localStorage.getItem(msgSeenKey()) || ''; }catch(e){ return ''; } }
+function msgUnread(){ const me = msgMe(), seen = msgSeen(); return msgList().filter(m => m.from !== me.id && String(m.createdAt) > seen); }
+function msgSend(to, toName, text, kind, forceId, fromName){
+  text = String(text || '').trim(); if (!text) return null;
+  if (!DATA.messages) DATA.messages = [];
+  const me = msgMe(), now = new Date().toISOString();
+  const id = forceId || ('m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
+  if (DATA.messages.some(x => x.id === id)) return null;
+  const rec = { id, from: me.id, fromName: fromName || me.name, to, toName, text, kind: kind || 'message', createdAt: now, updatedAt: now };
+  DATA.messages.push(rec); saveData(); return rec;
+}
+function msgRecipients(){
+  const me = msgMe(), out = [];
+  if (me.kind !== 'teacher') out.push(['all', 'Everyone (all staff)'], ['teachers', 'All teachers']);
+  else out.push(['all', 'Everyone (all staff)']);
+  if (me.kind !== 'admin') out.push(['admin', 'Admin']);
+  if (me.kind !== 'cashier') out.push(['cashier', 'Cashier']);
+  (DATA.teachers || []).filter(t => t.id !== me.id).forEach(t => out.push([t.id, (isProprietorRec(t) ? 'Proprietor · ' : '') + t.name]));
+  return out;
+}
+/* ---------- bell + alerts ---------- */
+function msgBell(){
+  const b = document.getElementById('topbar-bell'); if (!b || !DATA) return;
+  const n = msgUnread().length;
+  b.style.display = '';
+  b.innerHTML = '🔔' + (n ? '<span class="bell-n">' + (n > 9 ? '9+' : n) + '</span>' : '');
+  const nav = document.getElementById('nav-messages'); if (nav) nav.innerHTML = 'Messaging' + (n ? ' <span class="bell-n" style="position:static;margin-left:6px;">' + n + '</span>' : '');
+  try{
+    const last = localStorage.getItem('gj_msgnotified_' + msgMe().id) || '';
+    const fresh = msgUnread().filter(m => String(m.createdAt) > last);
+    if (fresh.length){
+      localStorage.setItem('gj_msgnotified_' + msgMe().id, fresh.map(m => m.createdAt).sort().pop());
+      if (last && 'Notification' in window && Notification.permission === 'granted' && document.hidden){
+        const m0 = fresh[0]; new Notification((m0.kind === 'birthday' ? '🎂 ' : '') + (m0.fromName || 'New message'), { body: String(m0.text).slice(0, 140) });
+      }
+    }
+  }catch(e){}
+}
+function msgAskAlerts(){
+  if (!('Notification' in window)){ alert('This browser does not support alerts.'); return; }
+  Notification.requestPermission().then(p => { msgRenderAlertBtn(); if (p === 'granted') new Notification('Alerts are on', { body: 'You will be told about new messages while the page is open in the background.' }); });
+}
+function msgRenderAlertBtn(){
+  const b = document.getElementById('msg-alert-btn'); if (!b) return;
+  const ok = ('Notification' in window) && Notification.permission === 'granted';
+  b.style.display = ('Notification' in window) && !ok ? '' : 'none';
+}
+/* ---------- birthdays ---------- */
+function bdayPeople(){
+  const out = [], now = new Date(), y = now.getFullYear();
+  ((DATA.teachers || []).filter(t => !isProprietorRec(t)).concat((DATA.staff || []).map(o => Object.assign({}, o, { _nonTeaching: true })))).forEach(t => {
+    const d = +t.dobDay, m = +t.dobMonth; if (!d || !m) return;
+    let next = new Date(y, m - 1, d); const t0 = new Date(y, now.getMonth(), now.getDate());
+    if (next < t0) next = new Date(y + 1, m - 1, d);
+    const days = Math.round((next - t0) / 86400000);
+    out.push({ t, days, d, m });
+  });
+  return out.sort((a, b) => a.days - b.days);
+}
+function bdayToday(){ return bdayPeople().filter(x => x.days === 0); }
+function bdayEnsureMessages(){
+  if (!DATA || !DATA.teachers) return;
+  if (session.role === 'admin' && DATA.messages){   // tidy up: birthday notes older than 24 hours are removed for everyone
+    const old = DATA.messages.filter(m => m.kind === 'birthday' && !msgFresh(m));
+    if (old.length){ old.forEach(m => queueTombstone('Messages', m.id)); DATA.messages = DATA.messages.filter(m => msgFresh(m)); saveData(); }
+  }
+  const ds = todayStr(); let any = false;
+  bdayToday().forEach(x => {
+    if (!DATA.messages) DATA.messages = [];
+    if (x.t._nonTeaching){ const idN = 'bday-' + x.t.id + '-' + ds; if (!DATA.messages.some(m => m.id === idN)){ const now = new Date().toISOString(); DATA.messages.push({ id: idN, from: 'school', fromName: 'Great Joy family', to: 'all', toName: 'Everyone', kind: 'birthday', text: '🎂 Today is ' + x.t.name + '\'s birthday! Please wish ' + String(x.t.name).split(' ')[0] + ' a happy birthday when you see them.', createdAt: now, updatedAt: now }); any = true; } return; }
+    const idA = 'bday-' + x.t.id + '-' + ds, idB = 'bdaywish-' + x.t.id + '-' + ds;
+    const first = String(x.t.name).split(' ')[0];
+    if (!DATA.messages.some(m => m.id === idA)){
+      const now = new Date().toISOString();
+      DATA.messages.push({ id: idA, from: 'school', fromName: 'Great Joy family', to: 'all', toName: 'Everyone', kind: 'birthday', text: '🎂 Today is ' + x.t.name + '\'s birthday! Please wish ' + first + ' a happy birthday when you see them.', createdAt: now, updatedAt: now }); any = true;
+    }
+    if (!DATA.messages.some(m => m.id === idB)){
+      const now = new Date().toISOString();
+      DATA.messages.push({ id: idB, from: 'school', fromName: 'Great Joy family', to: x.t.id, toName: x.t.name, kind: 'birthday', text: 'Dear ' + first + ', ' + bdayWish(), createdAt: now, updatedAt: now }); any = true;
+    }
+  });
+  if (any) saveData();
+}
+function renderBdayBar(){
+  const el = document.getElementById('bday-bar'); if (!el) return;
+  const today = bdayToday(), me = msgMe();
+  if (!today.length){ el.innerHTML = ''; return; }
+  const mineT = today.find(x => x.t.id === me.id);
+  el.innerHTML = today.map(x => {
+    const mine = x.t.id === me.id, first = escapeHtml(String(x.t.name).split(' ')[0]);
+    const wishMsg = (DATA.messages || []).find(m => m.id === 'bdaywish-' + x.t.id + '-' + todayStr());
+    return '<div class="bday-card">' + (x.t.photo ? '<img src="' + x.t.photo + '" alt="">' : '<span class="bday-ico">🎂</span>')
+      + '<div style="flex:1;min-width:200px;"><strong>' + (mine ? 'Happy birthday, ' + first + '! 🎉' : 'It\'s ' + escapeHtml(x.t.name) + '\'s birthday today!') + '</strong><div class="hint" style="margin:2px 0 0;color:inherit;opacity:.85;">'
+      + (mine ? escapeHtml(wishMsg ? String(wishMsg.text).replace(/^Dear [^,]*, /, '') : bdayWish()) : 'Send a warm wish.') + '</div></div>'
+      + (mine || x.t._nonTeaching ? '' : '<button class="btn btn-sm" onclick="bdayWishNow(\'' + x.t.id + '\')">Send a birthday wish</button>') + '</div>';
+  }).join('');
+}
+function bdayWishNow(tid){
+  const t = (DATA.teachers || []).find(x => x.id === tid); if (!t) return;
+  const first = String(t.name).split(' ')[0];
+  msgSend(tid, t.name, 'Dear ' + first + ', ' + bdayWish(), 'birthday');
+  msgBell(); renderBdayBar();
+  const b = document.getElementById('bday-bar'); if (b) b.insertAdjacentHTML('beforeend', '<div class="hint" style="margin:6px 0;">Wish sent to ' + escapeHtml(t.name) + '.</div>');
+  if (document.getElementById('view-messages').classList.contains('active')) renderMessages();
+}
+function bdayOverviewHtml(){
+  const list = bdayPeople().filter(x => x.days <= 30);
+  if (!list.length) return '<div class="empty-state">No staff birthdays in the next 30 days. (Teachers add their birthday in My profile.)</div>';
+  return '<div style="overflow-x:auto;"><table><thead><tr><th>Who</th><th>Birthday</th><th>When</th></tr></thead><tbody>' + list.map(x => '<tr><td><strong>' + escapeHtml(x.t.name) + '</strong></td><td>' + x.d + ' ' + TPROF_MONTHS[x.m - 1] + '</td><td>' + (x.days === 0 ? '<span class="status-badge status-paid">Today 🎂</span>' : x.days === 1 ? 'Tomorrow' : 'In ' + x.days + ' days') + '</td></tr>').join('') + '</tbody></table></div>';
+}
+/* ---------- the Messages page ---------- */
+let MSG_TAB = 'inbox';
+function msgTab(k){ MSG_TAB = k; renderMessages(); }
+function msgGo(k){ MSG_TAB = k; showView('messages'); }
+function msgCanParents(){ return session.role !== 'teacher' || ((getTeacherObj() || {}).allocations || []).some(a => a.subject === '*'); }
+function renderMessages(){
+  const root = document.getElementById('msg-root'); if (!root) return;
+  const me = msgMe(), isAdmin = me.kind === 'admin';
+  if (MSG_TAB === 'parents' && !msgCanParents()) MSG_TAB = 'inbox';
+  const tabs = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"><button class="ac-tab' + (MSG_TAB === 'inbox' ? ' active' : '') + '" onclick="msgTab(\'inbox\')">Staff messages</button>'
+    + (msgCanParents() ? '<button class="ac-tab' + (MSG_TAB === 'parents' ? ' active' : '') + '" onclick="msgTab(\'parents\')">Parents · SMS &amp; WhatsApp</button>' : '') + '</div>';
+  if (MSG_TAB === 'parents'){ root.innerHTML = tabs + '<div id="par-root"></div>'; parRender(); return; }
+  const seenBefore = msgSeen();
+  const list = msgList();
+  const opts = msgRecipients().map(r => '<option value="' + escapeHtml(r[0]) + '">' + escapeHtml(r[1]) + '</option>').join('');
+  const compose = '<div class="panel"><h3>New message</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><select id="msg-to" style="padding:8px;min-width:220px;">' + opts + '</select></div>'
+    + '<textarea id="msg-text" rows="3" placeholder="Type your message..." style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;"></textarea>'
+    + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary vo-keep" onclick="msgCompose()">Send</button><button class="btn vo-keep" onclick="msgComposeBday()">Send a birthday wish instead</button></div><div id="msg-note" class="hint"></div></div>';
+  const rows = list.map(m => {
+    const mine = m.from === me.id, unread = !mine && String(m.createdAt) > seenBefore;
+    return '<div class="msg-row' + (unread ? ' unread' : '') + (m.kind === 'birthday' ? ' bday' : '') + '"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><strong>' + (mine ? 'You → ' + escapeHtml(m.toName || '') : escapeHtml(m.fromName || '') + (m.to === 'all' ? ' · to everyone' : m.to === 'teachers' ? ' · to all teachers' : '')) + '</strong><span class="hint" style="margin:0;">' + escapeHtml(fmtDateTime(m.createdAt)) + '</span></div><div style="margin-top:4px;white-space:pre-wrap;">' + escapeHtml(m.text) + '</div>'
+      + (isAdmin ? '<div style="margin-top:4px;"><button class="btn btn-sm btn-danger" onclick="msgDelete(\'' + m.id + '\')">Delete</button></div>' : '') + '</div>';
+  }).join('');
+  const inbox = '<div class="panel"><h3>Messages</h3>' + (rows || '<div class="empty-state">No messages yet.</div>') + '</div>';
+  const staff = isAdmin ? '<div class="panel"><h3>Staff: who has been active</h3><p class="hint">Messages wait for a teacher and appear the next time they open the app. For someone who has not been on, also nudge them by WhatsApp or SMS.</p><div id="msg-staff">Loading...</div></div>' : '';
+  root.innerHTML = tabs + compose + inbox + staff;
+  try{ localStorage.setItem(msgSeenKey(), new Date().toISOString()); }catch(e){}
+  setTimeout(msgBell, 50);
+  if (isAdmin) msgStaffTable();
+  msgRenderAlertBtn();
+}
+function msgCompose(){
+  const sel = document.getElementById('msg-to'), tx = document.getElementById('msg-text'); if (!sel || !tx) return;
+  const to = sel.value, toName = sel.options[sel.selectedIndex].text.replace('Proprietor · ', '');
+  if (!tx.value.trim()){ document.getElementById('msg-note').textContent = 'Type a message first.'; return; }
+  msgSend(to, toName, tx.value, 'message'); renderMessages();
+  const n = document.getElementById('msg-note'); if (n) n.textContent = 'Sent. It reaches everyone the next time they open the app.';
+}
+function msgComposeBday(){
+  const sel = document.getElementById('msg-to'); if (!sel) return;
+  const to = sel.value, toName = sel.options[sel.selectedIndex].text;
+  const t = (DATA.teachers || []).find(x => x.id === to);
+  msgSend(to, toName, (t ? 'Dear ' + String(t.name).split(' ')[0] + ', ' : '') + bdayWish(), 'birthday'); renderMessages();
+}
+function msgDelete(id){
+  if (!confirm('Delete this message for everyone?')) return;
+  DATA.messages = (DATA.messages || []).filter(m => m.id !== id); queueTombstone('Messages', id); saveData(); renderMessages();
+}
+async function msgStaffTable(){
+  const el = document.getElementById('msg-staff'); if (!el) return;
+  let users = [];
+  try{ if (HOSTED){ const r = await hostedCall({ action: 'presence' }); users = (r && r.users) || []; } }catch(e){}
+  const by = {}; users.forEach(u => { if (u.name) by[String(u.name).toLowerCase()] = u; });
+  const rows = (DATA.teachers || []).filter(t => !isProprietorRec(t)).map(t => {
+    const u = by[String(t.name).toLowerCase()], online = u && u.online;
+    const ph = tprofPhonesOf(t)[0] || '';
+    return '<tr><td><strong>' + escapeHtml(t.name) + '</strong></td><td>' + (online ? '<span class="status-badge status-paid">Online now</span>' : u ? 'Last seen ' + escapeHtml(agoText(u.lastSeen)) : '<span class="hint" style="margin:0;">Not seen in the last 24 hours</span>') + '</td><td>'
+      + '<button class="btn btn-sm" onclick="msgPrefill(\'' + t.id + '\')">Message</button> '
+      + (ph ? '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + waLink(ph, 'Hello ' + t.name.split(' ')[0] + ', please open the school app: there is a new message for you.') + '">WhatsApp</a> <a class="btn btn-sm" href="' + smsLink([ph], 'Hello ' + t.name.split(' ')[0] + ', please open the school app: there is a new message for you.') + '">SMS</a>' : '<span class="hint" style="margin:0;">no phone yet</span>') + '</td></tr>';
+  }).join('');
+  el.innerHTML = rows ? '<div style="overflow-x:auto;"><table><thead><tr><th>Teacher</th><th>Status</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty-state">No teachers yet.</div>';
+}
+function msgPrefill(tid){ const s = document.getElementById('msg-to'); if (s){ s.value = tid; const x = document.getElementById('msg-text'); x.focus(); x.scrollIntoView({ block: 'center' }); } }
+/* ---------- parents: SMS and WhatsApp ---------- */
+function intlPhone(p){
+  let d = String(p || '').replace(/[^0-9+]/g, ''); if (!d) return '';
+  if (d[0] === '+') return d.slice(1); if (d.indexOf('00') === 0) return d.slice(2); if (d[0] === '0') return '233' + d.slice(1); if (d.length === 9) return '233' + d; return d;
+}
+function waLink(phone, text){ return 'https://wa.me/' + intlPhone(phone) + '?text=' + encodeURIComponent(text || ''); }
+function smsLink(nums, text){ return 'sms:' + nums.map(n => '+' + intlPhone(n)).join(',') + '?&body=' + encodeURIComponent(text || ''); }
+const PAR = { aud: 'all', cls: '', tpl: 'custom', text: '', sel: null, sent: {}, gw: null };
+const PAR_TPL = {
+  custom: '',
+  fees: 'Dear {parent}, this is a gentle reminder from {school}: {pupil} ({class}) has an outstanding balance of GH₵{balance}. Kindly make payment. Thank you.',
+  reopen: 'Dear {parent}, {school} re-opens on {reopen}. Please make sure {pupil} is ready. Thank you.',
+  meeting: 'Dear {parent}, you are invited to a parents\' meeting at {school}. Please attend. Thank you.',
+  closing: 'Dear {parent}, {school} vacates on {vacation}. {pupil} should come with all school items. Thank you.'
+};
+function parAudience(){
+  let list = DATA.students.filter(s => !s.status || s.status === 'active');
+  if (session.role === 'teacher'){ const cl = ((getTeacherObj() || {}).allocations || []).filter(a => a.subject === '*').map(a => a.class); list = list.filter(s => cl.some(c => classesEquivalent(s.class, c))); }
+  if (PAR.aud === 'class' && PAR.cls) list = list.filter(s => classesEquivalent(s.class, PAR.cls));
+  if (PAR.aud === 'owing') list = list.filter(s => { const st = studentStats(s); return st.feeKnown && st.balance > 0; });
+  return list.sort((a, b) => String(a.class).localeCompare(String(b.class), undefined, { numeric: true }) || String(a.name).localeCompare(String(b.name)));
+}
+function parFill(tpl, s){
+  const st = studentStats(s), set = DATA.academic.settings || {};
+  return String(tpl).replace(/\{parent\}/g, s.guardianName || 'Parent').replace(/\{pupil\}/g, s.name || '').replace(/\{class\}/g, s.class || '')
+    .replace(/\{balance\}/g, st.feeKnown ? fmtMoney(Math.max(0, st.balance)).replace(/[^0-9.,]/g, '') : '').replace(/\{school\}/g, DATA.meta.schoolName || 'school')
+    .replace(/\{reopen\}/g, set.reopeningDate || '').replace(/\{vacation\}/g, set.vacationDate || '');
+}
+async function parGwStatus(){
+  if (!HOSTED || session.role !== 'admin'){ PAR.gw = { enabled: false, na: true }; return; }
+  try{ const r = await hostedCall({ action: 'smsStatus' }); PAR.gw = r && !r.error ? r : { enabled: false, old: true }; }catch(e){ PAR.gw = { enabled: false, old: true }; }
+}
+async function parRender(){
+  const root = document.getElementById('par-root'); if (!root) return;
+  if (PAR.gw === null) await parGwStatus();
+  const classes = [...new Set(DATA.students.filter(s => !s.status || s.status === 'active').map(s => s.class).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+  const aud = parAudience();
+  const withNum = aud.filter(s => intlPhone(s.guardianPhone));
+  if (!PAR.sel) PAR.sel = new Set();
+  const selIds = new Set([...PAR.sel].filter(id => withNum.some(s => s.id === id)));
+  const isT = session.role === 'teacher';
+  root.innerHTML = '<div class="panel"><h3>Message parents</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'
+    + (isT ? '<span class="hint" style="margin:0;">Your class only</span>' : '<select onchange="PAR.aud=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="all"' + (PAR.aud === 'all' ? ' selected' : '') + '>All parents</option><option value="class"' + (PAR.aud === 'class' ? ' selected' : '') + '>One class</option><option value="owing"' + (PAR.aud === 'owing' ? ' selected' : '') + '>Parents owing fees</option></select>')
+    + (PAR.aud === 'class' && !isT ? '<select onchange="PAR.cls=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="">Choose class</option>' + classes.map(c => '<option' + (PAR.cls === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select>' : '')
+    + '<select onchange="parTpl(this.value)" style="padding:8px;"><option value="custom">Write my own</option><option value="fees"' + (PAR.tpl === 'fees' ? ' selected' : '') + '>Fees reminder</option><option value="reopen"' + (PAR.tpl === 'reopen' ? ' selected' : '') + '>Re-opening</option><option value="closing"' + (PAR.tpl === 'closing' ? ' selected' : '') + '>Vacation</option><option value="meeting"' + (PAR.tpl === 'meeting' ? ' selected' : '') + '>Parents\' meeting</option></select></div>'
+    + '<textarea id="par-text" rows="4" oninput="PAR.text=this.value" placeholder="Type the message. You can use {parent} {pupil} {class} {balance} {school}" style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;">' + escapeHtml(PAR.text) + '</textarea>'
+    + '<div class="hint">' + withNum.length + ' of ' + aud.length + ' pupils have a parent phone number. Pupils without one are left out. Tick who to send to below.</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button class="btn vo-keep" onclick="parSelAll(true)">Tick all</button><button class="btn vo-keep" onclick="parSelAll(false)">Untick all</button>'
+    + '<button class="btn btn-primary vo-keep" onclick="parBulkSms()">SMS app: ticked parents</button><button class="btn vo-keep" onclick="parWaNext()">WhatsApp: next parent</button>'
+    + '<button class="btn vo-keep" onclick="parCopy()">Copy numbers</button><button class="btn vo-keep" onclick="parCsv()">Download list</button>'
+    + (PAR.gw && PAR.gw.enabled ? '<button class="btn btn-primary vo-keep" onclick="parGateway()">Send with SMS gateway</button>' : '') + '</div><div id="par-note" class="hint"></div></div>'
+    + '<div class="panel"><div style="overflow-x:auto;"><table><thead><tr><th></th><th>Pupil</th><th>Class</th><th>Parent</th><th>Phone</th><th></th></tr></thead><tbody>'
+    + (aud.length ? aud.map(s => { const n = intlPhone(s.guardianPhone); return '<tr><td>' + (n ? '<input type="checkbox" ' + (PAR.sel.has(s.id) ? 'checked ' : '') + 'onchange="parTick(\'' + s.id + '\',this.checked)">' : '') + '</td><td>' + escapeHtml(s.name) + '</td><td>' + escapeHtml(s.class) + '</td><td>' + escapeHtml(s.guardianName || '') + '</td><td>' + (n ? escapeHtml(s.guardianPhone) : '<span class="hint" style="margin:0;">none</span>') + '</td><td style="white-space:nowrap;">'
+      + (n ? '<a class="btn btn-sm" target="_blank" rel="noopener" onclick="PAR.sent[\'' + s.id + '\']=1;this.textContent=\'WhatsApp ✓\'" href="#" data-s="' + s.id + '" data-k="wa">WhatsApp</a> <a class="btn btn-sm" href="#" data-s="' + s.id + '" data-k="sms">SMS</a>' : '') + '</td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty-state">No pupils in this group.</div></td></tr>')
+    + '</tbody></table></div></div>'
+    + (session.role === 'admin' ? parGwPanel() : '');
+  root.querySelectorAll('a[data-k]').forEach(a => {   // build the links at click time from the current message
+    a.addEventListener('click', ev => { const s = DATA.students.find(x => x.id === a.dataset.s); if (!s) return; const txt = parFill(document.getElementById('par-text').value, s); a.href = a.dataset.k === 'wa' ? waLink(s.guardianPhone, txt) : smsLink([s.guardianPhone], txt); });
+  });
+}
+function parGwPanel(){
+  const g = PAR.gw || {};
+  return '<details class="panel ts-acc"><summary><span class="ts-sum-name">SMS gateway (automatic sending, optional)</span><span class="hint" style="margin:0;">' + (g.enabled ? 'Connected' : 'Not connected') + '</span></summary><div class="ts-body">'
+    + '<p class="hint">With a gateway account (for example mNotify) the app sends the SMS itself, with no tapping. Paste your gateway API key and a sender name (up to 11 letters). The key is stored only on the school server. Until then, use the SMS app button, or copy the numbers from the "Parent Contacts" tab in the Google Sheet into any bulk SMS service.</p>'
+    + (g.old ? '<div class="gate-error">The school server needs the newest Code.gs for this.</div>' : '<input type="password" id="sms-key" placeholder="Gateway API key" style="padding:8px;width:260px;"> <input type="text" id="sms-sender" maxlength="11" placeholder="Sender name" value="' + escapeHtml(g.sender || '') + '" style="padding:8px;width:150px;"> <button class="btn btn-primary" onclick="parSaveGw()">Save</button>' + (g.enabled ? ' <button class="btn" onclick="parClearGw()">Disconnect</button>' : ''))
+    + '<div id="sms-note" class="hint"></div></div></details>';
+}
+async function parSaveGw(){ const k = document.getElementById('sms-key').value.trim(); const r = await hostedCall({ action: 'smsSetKey', key: k, sender: document.getElementById('sms-sender').value }); if (r && r.error){ document.getElementById('sms-note').textContent = r.error; return; } PAR.gw = null; parRender(); }
+async function parClearGw(){ await hostedCall({ action: 'smsSetKey', clear: true }); PAR.gw = null; parRender(); }
+function parTpl(k){ PAR.tpl = k; if (k !== 'custom'){ PAR.text = PAR_TPL[k]; } parRender(); }
+function parTick(id, on){ if (!PAR.sel) PAR.sel = new Set(); on ? PAR.sel.add(id) : PAR.sel.delete(id); }
+function parSelAll(on){ PAR.sel = new Set(on ? parAudience().filter(s => intlPhone(s.guardianPhone)).map(s => s.id) : []); parRender(); }
+function parChosen(){ const ids = PAR.sel || new Set(); return parAudience().filter(s => ids.has(s.id) && intlPhone(s.guardianPhone)); }
+function parNote(t){ const n = document.getElementById('par-note'); if (n) n.innerHTML = t; }
+function parMsg(){ return (document.getElementById('par-text') || {}).value || ''; }
+function parBulkSms(){
+  const ch = parChosen(); if (!ch.length) return parNote('Tick at least one parent first.'); if (!parMsg().trim()) return parNote('Type the message first.');
+  const same = !/\{(pupil|balance|class|parent)\}/.test(parMsg());
+  if (!same){ return parNote('This message is personal for each pupil, so use the SMS button on each row, or "Send with SMS gateway". (A plain message without {pupil} / {balance} can go to many parents at once.)'); }
+  const nums = [...new Set(ch.map(s => intlPhone(s.guardianPhone)))], text = parFill(parMsg(), ch[0]);
+  const batches = []; for (let i = 0; i < nums.length; i += 20) batches.push(nums.slice(i, i + 20));
+  parNote('Your phone can take about 20 numbers at a time. Tap each batch to open your SMS app: ' + batches.map((b, i) => '<a class="btn btn-sm" href="' + smsLink(b, text) + '">Batch ' + (i + 1) + ' (' + b.length + ')</a>').join(' '));
+}
+function parWaNext(){
+  const ch = parChosen().filter(s => !PAR.sent[s.id]); if (!parMsg().trim()) return parNote('Type the message first.');
+  if (!ch.length) return parNote('Everyone ticked has been opened. Untick or tick again to resend.');
+  const s = ch[0]; PAR.sent[s.id] = 1; window.open(waLink(s.guardianPhone, parFill(parMsg(), s)), '_blank');
+  parNote('Opened WhatsApp for ' + escapeHtml(s.name) + '\'s parent. ' + (ch.length - 1) + ' left: tap "WhatsApp: next parent" again.');
+}
+function parCopy(){
+  const ch = parChosen(), list = (ch.length ? ch : parAudience()).map(s => intlPhone(s.guardianPhone)).filter(Boolean);
+  const txt = [...new Set(list)].join(',');
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => parNote(list.length + ' numbers copied. Paste them into any bulk SMS service.'), () => { prompt('Copy these numbers:', txt); });
+}
+function parCsv(){
+  const ch = parChosen(), list = ch.length ? ch : parAudience();
+  const rows = [['Class', 'Pupil', 'Parent', 'Phone', 'International']].concat(list.map(s => [s.class, s.name, s.guardianName || '', s.guardianPhone || '', intlPhone(s.guardianPhone)]));
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'parent-contacts.csv'; a.click();
+}
+async function parGateway(){
+  const ch = parChosen(); if (!ch.length) return parNote('Tick at least one parent first.'); if (!parMsg().trim()) return parNote('Type the message first.');
+  const groups = {}; ch.forEach(s => { const t = parFill(parMsg(), s); (groups[t] = groups[t] || []).push(intlPhone(s.guardianPhone)); });
+  if (!confirm('Send ' + ch.length + ' SMS through the gateway now? This uses your gateway credit.')) return;
+  let sent = 0, failed = 0, err = '';
+  for (const t of Object.keys(groups)){ try{ const r = await hostedCall({ action: 'smsSend', numbers: groups[t], message: t }); sent += r.sent || 0; failed += r.failed || 0; if (r.error) err = r.error; }catch(e){ failed += groups[t].length; err = e.message || 'no connection'; } }
+  parNote('Gateway accepted ' + sent + ' message(s)' + (failed ? ', ' + failed + ' failed. ' + escapeHtml(err) : '.'));
+}
+
 function ovBar(pct, status, h){
   const col = status === 'complete' ? 'var(--green)' : status === 'progress' ? 'var(--gold)' : 'var(--red)';
   return '<div style="background:var(--paper-2);border:1px solid var(--line);height:' + (h || 12) + 'px;position:relative;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + col + ';transition:width .4s;"></div></div>';
@@ -3024,6 +3393,7 @@ function renderOvTeachers(){
   const D = withWork.reduce((n, x) => n + x.done, 0), T = withWork.reduce((n, x) => n + x.tot, 0), P = T ? Math.round(D / T * 100) : 0;
   const cnt = k => all.filter(x => x.status === k).length;
   const chip = (k, label, n) => '<button class="ac-tab' + (OV_TF.f === k ? ' active' : '') + '" onclick="ovSetTf(\'f\',\'' + k + '\')">' + label + ' <span class="hint" style="margin:0;">' + n + '</span></button>';
+  const attAll = all.filter(x => x.att); const attAvg = attAll.length ? Math.round(attAll.reduce((n, x) => n + x.att.kept, 0) / attAll.length) : null;
   const list = ovFilterList(all);
   const label = {complete:'Complete', progress:'In progress', notstarted:'Not started', none:'No subjects'};
   const pill = st => st === 'progress' ? '<span class="status-badge" style="background:#FFF3CD;color:#7a5b00;">' + label[st] + '</span>' : '<span class="status-badge ' + (st === 'complete' ? 'status-paid' : st === 'none' ? '' : 'status-owing') + '">' + label[st] + '</span>';
@@ -3032,6 +3402,7 @@ function renderOvTeachers(){
     return '<div class="panel" style="margin:0;padding:14px 16px;">'
       + '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><strong>' + escapeHtml(t.name) + '</strong><div class="hint" style="margin:2px 0 0;">' + escapeHtml(t.idNumber || '') + (t.password ? '' : ' · <span style="color:var(--red);">not logged in yet</span>') + '</div></div>' + pill(x.status) + '</div>'
       + (x.cts.length ? '<div style="margin-top:6px;">' + x.cts.map(c => '<span class="status-badge" style="margin-right:4px;">Class teacher · ' + escapeHtml(c) + '</span>').join('') + '</div>' : '')
+      + (x.att ? '<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:12.5px;"><span>Attendance register kept</span><strong>' + x.att.kept + '%</strong></div>' + ovBar(x.att.kept, x.att.kept >= 90 ? 'complete' : x.att.kept >= 60 ? 'progress' : 'notstarted', 8) + '<div class="hint" style="margin:3px 0 0;">' + x.att.days + ' of ' + x.att.of + ' school days marked' + (x.att.present != null ? ' · class present ' + x.att.present + '%' : '') + '</div></div>' : (x.cts.length ? '<div class="hint" style="margin-top:8px;">Attendance: set the term start date to see this.</div>' : ''))
       + (x.items.length ? '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:10px;"><span style="font-size:22px;font-weight:700;color:var(--ink);">' + x.pct + '%</span><span class="hint" style="margin:0;">' + x.done + ' of ' + x.tot + ' scores · ' + x.complete + '/' + x.items.length + ' subjects done</span></div>' + ovBar(x.pct, x.status, 12)
         + '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--ink);font-weight:600;">Subject by subject</summary><div style="margin-top:6px;">'
         + x.items.map(i => { const st = i.tot && i.done === i.tot ? 'complete' : i.done ? 'progress' : 'notstarted'; return '<div style="margin:6px 0;"><div style="display:flex;justify-content:space-between;font-size:12.5px;"><span>' + escapeHtml(i.subject) + ' · ' + escapeHtml(i.cls) + '</span><span style="font-weight:700;">' + i.done + '/' + i.tot + ' · ' + i.pct + '%</span></div>' + ovBar(i.pct, st, 6) + '</div>'; }).join('') + '</div></details>'
@@ -3041,6 +3412,7 @@ function renderOvTeachers(){
   el.innerHTML = '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px;"><div style="min-width:220px;flex:1;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><strong>Whole school</strong><span><span style="font-size:24px;font-weight:700;color:var(--ink);">' + P + '%</span> <span class="hint" style="margin:0;">' + D + ' of ' + T + ' scores entered</span></span></div>' + ovBar(P, P >= 100 ? 'complete' : P ? 'progress' : 'notstarted', 16) + '</div></div>'
     + '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">' + chip('all', 'All', all.length) + chip('notstarted', 'Not started', cnt('notstarted')) + chip('progress', 'In progress', cnt('progress')) + chip('complete', 'Complete', cnt('complete'))
     + '<input type="text" placeholder="Search teacher, subject or class" value="' + escapeHtml(OV_TF.q || '') + '" oninput="OV_TF.q=this.value;ovRefreshGrid()" style="margin-left:auto;padding:6px 10px;border:1px solid var(--line);min-width:200px;"></div>'
+    + (attAvg != null ? '<div class="hint" style="margin:0 0 10px;">Overall attendance register kept by class teachers: <strong>' + attAvg + '%</strong></div>' : '')
     + '<div id="ov-tgrid"></div>';
   window._ovCard = card;
   ovRefreshGrid();
@@ -3077,6 +3449,7 @@ function renderOverview(){
   document.getElementById('ov-stats').innerHTML = cards.map(c => '<div class="stat-card ' + c[2] + '"><div class="num">' + c[1] + '</div><div class="lbl">' + c[0] + '</div></div>').join('');
 
   renderOvTeachers();
+  { const bd = document.getElementById('ov-bday'); if (bd) bd.innerHTML = bdayOverviewHtml(); }
 
   const classes = [...new Set(active.map(s => canonicalizeClassName(s.class) || s.class).filter(Boolean))].sort();
   const att = DATA.attendance || [];
@@ -4042,6 +4415,10 @@ function enterApp(){
     tprofTopbar();
     showView(isProp ? 'overview' : 'dashboard');
   }
+  { const nm = document.getElementById('nav-messages'); if (nm) nm.style.display = ''; const ns = document.getElementById('nav-sms'); if (ns) ns.style.display = msgCanParents() ? '' : 'none'; }
+  if (!DATA.messages) DATA.messages = [];
+  try{ bdayEnsureMessages(); }catch(e){}
+  msgBell(); renderBdayBar();
   startPresence();
 }
 function toggleSidebar(){
@@ -4052,7 +4429,7 @@ function showView(name){
   if (session.role === 'proprietor'){ if (PROP_VIEWS.indexOf(name) < 0) return; }
   else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess'].includes(name)) return;
   if (name === 'overview' && session.role !== 'admin' && session.role !== 'proprietor') return;
-  if (session.role === 'teacher' && !['teacherhome','teacherscores','summary','attendance','assessments','timetable','planner'].includes(name)) return;
+  if (session.role === 'teacher' && !['messages','teacherhome','teacherscores','summary','attendance','assessments','timetable','planner'].includes(name)) return;
   if ((name === 'timetable' || name === 'planner') && session.role !== 'admin' && session.role !== 'teacher') return;
   if (name === 'assessments' && session.role !== 'admin' && session.role !== 'teacher') return;
   if (name === 'attendance' && !attendanceClassesForUser().length && session.role !== 'admin' && session.role !== 'proprietor') return;
@@ -4060,13 +4437,14 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
+  try{ renderBdayBar(); }catch(e){}
   document.querySelectorAll('.nav-item[data-view="'+name+'"]').forEach(b => b.classList.add('active'));
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('backdrop').classList.remove('active');
   const renderers = {dashboard:renderDashboard, admission:renderAdmission, students:renderStudents, payments:renderPaymentsView,
                       admissionfees:renderAdmissionFeesView, feedingfees:renderFeedingFeesView, teacherscores:renderTeacherScores,
                       fees:renderFees, import:renderImportView, backup:()=>{}, academic:renderAcademic, settings:renderSettingsView,
-                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner};
+                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, messages:renderMessages, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner};
   ovAutoRefresh(name === 'overview');
   if (renderers[name]) renderers[name]();
 }
@@ -7615,6 +7993,8 @@ function renderStaffView(){
     <td>${escapeHtml(r.position)}</td><td>${escapeHtml(r.phone)}</td><td>${escapeHtml(r.emis)}</td>
     <td class="admin-only"><div class="row-actions"><button class="btn btn-sm" onclick="editStaffRow('${r.key}')">Edit</button>${r.kind === 'Non-teaching' ? `<button class="btn btn-sm btn-danger" onclick="deleteStaff('${r.rid}')">Remove</button>` : ''}</div></td></tr>`).join('')
     : '<tr><td colspan="8"><div class="empty-state">No staff match.</div></td></tr>';
+  { const sc = document.getElementById('staff-cards'); if (sc) sc.innerHTML = '<div class="hint" style="margin:0 0 10px;"><strong>' + rows.length + '</strong> employee' + (rows.length === 1 ? '' : 's') + '</div>' + staffCardsHtml(rows); }
+  if (isAdmin && !document.getElementById('staff-edit-id').value && !document.getElementById('staff-join').value) document.getElementById('staff-join').value = todayStr();
   renderStaffIdList(rows);
 }
 let pendingStaffPhoto = null;
@@ -7626,14 +8006,22 @@ function handleStaffPhoto(input){
     document.getElementById('staff-photo-preview').innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
   });
 }
+const STAFF_EXTRA = [['staff-father','fatherName'],['staff-exp','experience'],['staff-nid','nationalId'],['staff-religion','religion'],['staff-email','email'],['staff-edu','education'],['staff-blood','bloodGroup'],['staff-address','address'],['staff-gender','gender'],['staff-join','joinDate']];
 function resetStaffForm(){
-  ['staff-edit-id','staff-edit-kind','staff-name','staff-position','staff-phone','staff-emis','staff-photo'].forEach(i => { document.getElementById(i).value = ''; });
+  ['staff-edit-id','staff-edit-kind','staff-name','staff-position','staff-phone','staff-emis','staff-photo','staff-salary','staff-dob'].concat(STAFF_EXTRA.map(x => x[0])).forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
+  document.getElementById('staff-join').value = todayStr();
   pendingStaffPhoto = null;
   document.getElementById('staff-photo-preview').innerHTML = '';
   document.getElementById('staff-position').disabled = false;
   document.getElementById('staff-emis').disabled = true;
-  document.getElementById('staff-form-title').textContent = 'Add non-teaching staff';
-  document.getElementById('staff-cancel-btn').style.display = 'none';
+  document.getElementById('staff-form-title').textContent = 'Add new employee';
+}
+function staffApplyExtras(o){
+  STAFF_EXTRA.forEach(x => { const v = document.getElementById(x[0]).value.trim(); if (x[1] === 'joinDate' || v || o[x[1]]) o[x[1]] = v; });
+  const sal = document.getElementById('staff-salary').value; o.salary = sal === '' ? '' : Number(sal);
+  const dob = document.getElementById('staff-dob').value;
+  if (dob){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob); if (m){ o.dob = dob; o.dobDay = +m[3]; o.dobMonth = +m[2]; } }
+  else if (o.dob){ o.dob = ''; }
 }
 function saveStaff(){
   if (session.role !== 'admin') return;
@@ -7647,20 +8035,23 @@ function saveStaff(){
     const t = (DATA.teachers || []).find(x => x.id === id);
     if (!t) return;
     if (!name){ toast('Enter the name.'); return; }
-    t.name = name; t.phone = phone; t.emisCode = document.getElementById('staff-emis').value.trim();
+    t.name = name; t.emisCode = document.getElementById('staff-emis').value.trim();
+    if (phone){ const ph = (t.phones || []).slice(); ph[0] = phone; t.phones = ph.filter(Boolean); t.phone = phone; }
+    staffApplyExtras(t);
     if (pendingStaffPhoto) t.photo = pendingStaffPhoto;
     t.updatedAt = now;
     saveData(); resetStaffForm(); renderStaffView(); toast('Teacher details saved.');
     return;
   }
-  if (!name || !position){ toast('Enter the name and the position.'); return; }
+  if (!name || !position){ toast('Enter the name and the role.'); return; }
   const dup = nonTeachingList().find(o => o.id !== id && nameKey(o.name) === nameKey(name));
   if (dup){ toast(dup.name + ' is already in the staff list.'); return; }
   if (id){
     const o = nonTeachingList().find(x => x.id === id);
-    if (o){ o.name = name; o.position = position; o.phone = phone; if (pendingStaffPhoto) o.photo = pendingStaffPhoto; o.updatedAt = now; }
+    if (o){ o.name = name; o.position = position; o.phone = phone; staffApplyExtras(o); if (pendingStaffPhoto) o.photo = pendingStaffPhoto; o.updatedAt = now; }
   } else {
     const o = { id: uid(), name, position, phone, createdAt: now, updatedAt: now };
+    staffApplyExtras(o);
     if (pendingStaffPhoto) o.photo = pendingStaffPhoto;
     o.idNumber = generateStaffId(o);
     nonTeachingList().push(o);
@@ -7685,11 +8076,34 @@ function editStaffRow(key){
   document.getElementById('staff-emis').disabled = !isT;
   document.getElementById('staff-emis').value = isT ? (o.emisCode || '') : '';
   document.getElementById('staff-phone').value = o.phone || '';
+  STAFF_EXTRA.forEach(x => { if (o[x[1]]) document.getElementById(x[0]).value = o[x[1]]; });
+  if (o.salary !== undefined && o.salary !== '') document.getElementById('staff-salary').value = o.salary;
+  if (o.dob) document.getElementById('staff-dob').value = o.dob;
+  else if (o.dobDay && o.dobMonth) document.getElementById('staff-dob').value = '2000-' + String(o.dobMonth).padStart(2, '0') + '-' + String(o.dobDay).padStart(2, '0');
   if (o.photo) document.getElementById('staff-photo-preview').innerHTML = `<img src="${imgSrc(o.photo)}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
-  document.getElementById('staff-form-title').textContent = 'Edit ' + (isT ? 'teaching' : 'non-teaching') + ' staff';
-  document.getElementById('staff-cancel-btn').style.display = '';
+  document.getElementById('staff-form-title').textContent = 'Edit ' + o.name;
   document.getElementById('staff-name').focus();
   window.scrollTo(0, 0);
+}
+function staffCardsHtml(rows){
+  if (!rows.length) return '<div class="empty-state">No employees match.</div>';
+  return '<div class="emp-cards">' + rows.map(r => '<div class="emp-card">' + (r.photo ? '<img src="' + imgSrc(r.photo) + '" alt="">' : '<div class="emp-av">👤</div>') + '<strong>' + escapeHtml(r.name) + '</strong><div class="hint" style="margin:2px 0 8px;">' + escapeHtml(r.position || '') + '</div><div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;"><button class="btn btn-sm" onclick="showStaffProfile(\'' + r.key + '\')">View</button>' + (session.role === 'admin' ? '<button class="btn btn-sm" onclick="editStaffRow(\'' + r.key + '\')">Edit</button>' + (r.kind === 'Non-teaching' ? '<button class="btn btn-sm btn-danger" onclick="deleteStaff(\'' + r.rid + '\')">Delete</button>' : '') : '') + '</div></div>').join('') + '</div>';
+}
+function showStaffProfile(key){
+  const isT = String(key).indexOf('t:') === 0, id = String(key).slice(2);
+  const o = isT ? (DATA.teachers || []).find(x => x.id === id) : nonTeachingList().find(x => x.id === id); if (!o) return;
+  const adm = session.role === 'admin' || session.role === 'proprietor';
+  const row = (k, v) => v ? '<tr><td style="color:var(--text-dim);width:40%;">' + k + '</td><td><strong>' + escapeHtml(String(v)) + '</strong></td></tr>' : '';
+  const html = '<div style="max-width:460px;"><div style="text-align:center;">' + (o.photo ? '<img src="' + imgSrc(o.photo) + '" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">' : '<div style="font-size:48px;">👤</div>') + '<h3 style="margin:6px 0 0;">' + escapeHtml(o.name) + '</h3><div class="hint">' + escapeHtml(isT ? teachingPosition(o) : (o.position || '')) + '</div></div><table style="margin-top:10px;width:100%;">'
+    + row('ID number', o.idNumber) + row('Mobile', o.phone) + row('Email', o.email) + row('Gender', o.gender) + row('Birthday', o.dobDay && o.dobMonth ? o.dobDay + ' ' + TPROF_MONTHS[o.dobMonth - 1] : '') + row('Date joined', o.joinDate)
+    + (adm ? row('Monthly salary', o.salary !== undefined && o.salary !== '' ? fmtMoney(o.salary) : '') + row('National ID', o.nationalId) : '') + row('Father / husband', o.fatherName) + row('Experience', o.experience) + row('Education', o.education) + row('Religion', o.religion) + row('Blood group', o.bloodGroup) + row('Home address', o.address) + '</table></div>';
+  alert_html(html);
+}
+function alert_html(html){
+  let ov = document.getElementById('gj-info-ov');
+  if (!ov){ ov = document.createElement('div'); ov.id = 'gj-info-ov'; ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'; ov.onclick = e => { if (e.target === ov) ov.style.display = 'none'; }; document.body.appendChild(ov); }
+  ov.innerHTML = '<div style="background:var(--paper,#fff);padding:20px;border-radius:14px;max-height:90vh;overflow:auto;">' + html + '<div style="text-align:right;margin-top:12px;"><button class="btn" onclick="this.closest(\'#gj-info-ov\').style.display=\'none\'">Close</button></div></div>';
+  ov.style.display = 'flex';
 }
 function deleteStaff(id){
   const o = nonTeachingList().find(x => x.id === id);
@@ -11032,7 +11446,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.09-b';
+const APP_VERSION = '2026.11.09-d';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -11113,7 +11527,7 @@ async function loadParentUpdates(){
   const box = document.getElementById('sa-updates');
   try{
     const r = await hostedCall({action:'updatesList'});
-    const pend = (r.updates||[]).filter(u=>u.status==='pending'), done = (r.updates||[]).filter(u=>u.status!=='pending').slice(0,5);
+    const pend = (r.updates||[]).filter(u=>u.status==='pending'), done = (r.updates||[]).filter(u=>u.status!=='pending' && (!u.decidedAt || (Date.now()-new Date(u.decidedAt).getTime()) < 86400000)).slice(0,5);
     document.getElementById('sa-pend-count').textContent = pend.length ? '('+pend.length+')' : '';
     const card = (u, actions) => `<div style="border:1px solid var(--line);padding:12px;margin-bottom:10px;">
       <div style="font-weight:600;">${escapeHtml(u.name)} <span class="hint">· ${escapeHtml(u.class)} · ${fmtDate(String(u.createdAt).slice(0,10))}</span> ${u.status!=='pending'?'<span class="hint">· '+u.status+'</span>':''}</div>
