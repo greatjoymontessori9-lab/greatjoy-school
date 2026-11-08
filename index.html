@@ -935,6 +935,7 @@
             <div class="field"><label for="adm-dob">Date of birth</label><input type="date" id="adm-dob"></div>
             <div class="field"><label for="adm-gender">Gender</label><select id="adm-gender"><option value="">Select...</option><option>Male</option><option>Female</option></select></div>
             <div class="field"><label for="adm-date">Date of admission</label><input type="date" id="adm-date"></div>
+            <div class="field"><label for="adm-feeplan">Fee plan</label><select id="adm-feeplan"><option value="full">Full fees</option><option value="half">Half fees</option><option value="free">Free (no fees)</option></select></div>
             <div class="field"><label for="adm-prev-school">Previous school (optional)</label><input type="text" id="adm-prev-school"></div>
           </div>
         </div>
@@ -4541,8 +4542,12 @@ function feeForClass(cls){
 function totalPaidFor(studentId){
   return DATA.payments.filter(p => p.studentId === studentId).reduce((s,p)=>s+p.amount,0);
 }
+const FEE_PLANS = { full: { label: 'Full fees', mult: 1 }, half: { label: 'Half fees', mult: 0.5 }, free: { label: 'Free (no fees)', mult: 0 } };
+function feePlanOf(s){ return FEE_PLANS[s && s.feePlan] ? s.feePlan : 'full'; }
 function studentStats(s){
-  const fee = feeForClass(s.class);
+  const baseFee = feeForClass(s.class);
+  const plan = feePlanOf(s);
+  const fee = baseFee === null ? null : Math.round(baseFee * FEE_PLANS[plan].mult * 100) / 100;
   const paid = totalPaidFor(s.id);
   const feeKnown = fee !== null;
   const carry = s.carryForward || 0;
@@ -4553,7 +4558,9 @@ function studentStats(s){
   else if (balance > 0){ status = 'Still Owing'; statusClass = 'status-owing'; }
   else if (balance === 0){ status = 'Paid in Full'; statusClass = 'status-paid'; }
   else { status = 'Overpaid by ' + fmtMoney(Math.abs(balance)); statusClass = 'status-over'; }
-  return {fee, carry, totalOwed, paid, balance, status, statusClass, feeKnown};
+  if (feeKnown && plan === 'free' && balance <= 0 && !carry){ status = 'Free (no fees)'; statusClass = 'status-paid'; }
+  else if (feeKnown && plan === 'half' && balance === 0){ status = 'Paid in Full (half fees)'; }
+  return {fee, baseFee, plan, carry, totalOwed, paid, balance, status, statusClass, feeKnown};
 }
 function fmtMoney(n){
   return (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -4682,6 +4689,7 @@ function renderAdmission(){
   document.getElementById('adm-emerg-phone').value = '';
   document.getElementById('adm-medical').value = '';
   document.getElementById('adm-notes').value = '';
+  { const fp = document.getElementById('adm-feeplan'); if (fp) fp.value = 'full'; }
   document.getElementById('adm-photo').value = '';
   document.getElementById('adm-photo-preview').innerHTML = 'No photo';
   pendingAdmissionPhoto = null;
@@ -4722,6 +4730,7 @@ function submitAdmission(goToPayment){
     emergencyPhone: document.getElementById('adm-emerg-phone').value.trim(),
     medical: document.getElementById('adm-medical').value.trim(),
     notes: document.getElementById('adm-notes').value.trim(),
+    feePlan: (document.getElementById('adm-feeplan') || {}).value || 'full',
     photo: pendingAdmissionPhoto
   };
   DATA.students.push(newStudent);
@@ -4791,7 +4800,7 @@ function renderStudents(){
     <tr>
       <td>${escapeHtml(s.name)}<div style="font-size:10.5px;color:var(--muted,#777);letter-spacing:.02em;">${escapeHtml(s.idCardNo || '')}</div></td>
       <td>${escapeHtml(s.class)}</td>
-      <td class="num-cell">${st.feeKnown ? fmtMoney(st.fee) : '—'}</td>
+      <td class="num-cell">${st.feeKnown ? fmtMoney(st.fee) : '—'}${feePlanCell(s, st)}</td>
       <td class="num-cell">${st.carry ? fmtMoney(st.carry) : '—'}</td>
       <td class="num-cell">${fmtMoney(st.paid)}</td>
       <td class="num-cell">${st.feeKnown ? fmtMoney(st.balance) : '—'}</td>
@@ -4814,6 +4823,18 @@ function renderStudents(){
       <th>Name</th><th>Class</th><th>Fee</th><th>Carried Fwd</th><th>Paid</th><th>Balance</th><th>Status</th><th></th><th class="admin-only"></th>
     </tr></thead><tbody>${rows}</tbody></table>`;
   document.querySelectorAll('#students-table-wrap .admin-only').forEach(el => el.style.display = isAdmin ? '' : 'none');
+}
+function feePlanCell(s, st){
+  const can = session.role === 'admin' || session.role === 'cashier';
+  const p = feePlanOf(s);
+  if (!can) return p === 'full' ? '' : '<div class="hint" style="margin:2px 0 0;">' + FEE_PLANS[p].label + '</div>';
+  return '<div><select title="Fee plan" style="font-size:11px;padding:2px;margin-top:3px;' + (p !== 'full' ? 'font-weight:700;color:var(--gold);' : '') + '" onchange="setFeePlan(\'' + s.id + '\', this.value)">' + Object.keys(FEE_PLANS).map(k => '<option value="' + k + '"' + (k === p ? ' selected' : '') + '>' + FEE_PLANS[k].label + '</option>').join('') + '</select></div>';
+}
+function setFeePlan(id, plan){
+  const s = DATA.students.find(x => x.id === id); if (!s || !FEE_PLANS[plan]) return;
+  if (!(session.role === 'admin' || session.role === 'cashier')) return;
+  s.feePlan = plan; s.updatedAt = new Date().toISOString(); saveData(); renderStudents();
+  toast(s.name + ': ' + FEE_PLANS[plan].label + '.');
 }
 function updateStudentStatus(id, status){
   const s = DATA.students.find(x=>x.id===id);
@@ -8694,7 +8715,7 @@ function renderSummaryFees(s){
   document.getElementById('summary-tab-content').innerHTML = `
     <div class="panel">
       <h3>Tuition</h3>
-      <table><tr><td style="font-weight:600;">Fee</td><td>${st.feeKnown?fmtMoney(st.fee):'—'}</td></tr>
+      <table><tr><td style="font-weight:600;">Fee</td><td>${st.feeKnown?fmtMoney(st.fee):'—'}${st.plan && st.plan!=='full' ? ' <span style="font-size:11px;">(' + FEE_PLANS[st.plan].label.toLowerCase() + ')</span>' : ''}</td></tr>
       <tr><td style="font-weight:600;">Carried forward</td><td>${fmtMoney(st.carry)}</td></tr>
       <tr><td style="font-weight:600;">Paid</td><td>${fmtMoney(st.paid)}</td></tr>
       <tr><td style="font-weight:600;">Balance</td><td>${st.feeKnown?fmtMoney(st.balance):'—'}</td></tr></table>
@@ -11647,7 +11668,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.09-g';
+const APP_VERSION = '2026.11.09-h';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
