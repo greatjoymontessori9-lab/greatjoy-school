@@ -776,6 +776,7 @@
 .acx-i{display:flex;gap:8px;align-items:center;font-size:14px;padding:5px 0;cursor:pointer}.acx-i em{font-style:normal;color:#b45309}
 .acx-i input{width:18px;height:18px;flex:none}
 .acx-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap}
+.stu-pick-btn{display:block;width:100%;text-align:left;margin:0 0 8px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper,#fff);font:inherit;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s}.stu-pick-btn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(15,23,42,.14)}
 </style>
 </head>
 <body>
@@ -841,9 +842,14 @@
       <div id="login-teacher-tabs" style="display:none;"></div>
     </div>
     <div id="login-student-field" style="display:none;">
-      <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input type="text" id="lg-stu-name" placeholder="Your full name*" autocomplete="name" autocapitalize="words"></div>
-      <div class="lg-field"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><select id="lg-stu-class"><option value="">Choose your class*</option></select></div>
-      <div class="lg-field"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input type="password" id="lg-stu-pin" placeholder="Your PIN*" autocomplete="off" onkeydown="if(event.key==='Enter')stuInlineLogin();"></div>
+      <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input type="text" id="lg-stu-name" placeholder="Your name (first or last is fine)*" autocomplete="name" autocapitalize="words" oninput="stuReset()" onkeydown="if(event.key==='Enter')stuInlineLogin();"></div>
+      <div class="lg-field"><svg viewBox="0 0 24 24"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4"/></svg><select id="lg-stu-class" onchange="stuReset()"><option value="">Choose your class*</option></select></div>
+      <div id="lg-stu-pick" style="display:none;"></div>
+      <div id="lg-stu-step2" style="display:none;">
+        <div id="lg-stu-hello" class="gate-sub" style="font-weight:700;margin:0 0 10px;"></div>
+        <div class="lg-field"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input type="password" id="lg-stu-pin" placeholder="Your PIN*" autocomplete="off" onkeydown="if(event.key==='Enter')stuInlineLogin();"></div>
+        <button type="button" class="gate-switch" onclick="stuReset(true)">Not me / change name</button>
+      </div>
     </div>
     <div id="login-pass-field">
       <label for="login-pass" id="login-pass-label" class="lg-lbl">Password</label>
@@ -11681,7 +11687,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.09-j';
+const APP_VERSION = '2026.11.09-k';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -13056,7 +13062,7 @@ function setLoginRole(r){
   else {
     document.getElementById('login-pass-label').textContent = 'Password';
     showLoginPassword(true);
-    if (r === 'student'){ document.getElementById('login-pass-field').style.display = 'none'; const fl = document.getElementById('login-forgot-link'); if (fl) fl.style.display = 'none'; stuLoadClasses(); }
+    if (r === 'student'){ document.getElementById('login-pass-field').style.display = 'none'; const fl = document.getElementById('login-forgot-link'); if (fl) fl.style.display = 'none'; stuReset(); stuLoadClasses(); }
   }
 }
 /* ---------- student sign-in on the same card (talks to the school script, then opens the portal already signed in) ---------- */
@@ -13076,20 +13082,66 @@ async function stuLoadClasses(){
   }
   stuFillClasses();
 }
+let stuChosen = '', stuStepNo = 1, stuNames = [];
+function stuReset(focus){
+  stuChosen = ''; stuStepNo = 1; stuNames = [];
+  const g = id => document.getElementById(id);
+  if (g('lg-stu-step2')) g('lg-stu-step2').style.display = 'none';
+  if (g('lg-stu-pick')){ g('lg-stu-pick').style.display = 'none'; g('lg-stu-pick').innerHTML = ''; }
+  if (g('lg-stu-pin')) g('lg-stu-pin').value = '';
+  const btn = g('login-btn'); if (btn && loginRole === 'student'){ btn.style.display = ''; btn.textContent = 'Continue'; }
+  if (focus && g('lg-stu-name')) g('lg-stu-name').focus();
+}
+function stuShowPin(name){
+  stuChosen = name; stuStepNo = 2;
+  document.getElementById('lg-stu-pick').style.display = 'none';
+  document.getElementById('lg-stu-hello').textContent = 'Found you: ' + name;
+  document.getElementById('lg-stu-step2').style.display = 'block';
+  const btn = document.getElementById('login-btn'); btn.style.display = ''; btn.textContent = 'Log in';
+  try{ document.getElementById('lg-stu-pin').focus(); }catch(e){}
+}
+function stuNetMsg(e){ return (e && e.message === 'net') || (e && /fetch|network/i.test(e.message || '')) ? 'No connection. Please check your internet and try again.' : escapeHtml((e && e.message) || 'Something went wrong.'); }
+async function stuCheckName(name, cls, picked){
+  const errEl = document.getElementById('login-error');
+  const bad = m => { errEl.innerHTML = '<div class="gate-error">' + m + '</div>'; };
+  const btn = document.getElementById('login-btn'); btn.disabled = true; btn.textContent = 'Searching…';
+  try{
+    const r = await stuTransport({ action: 'stuCheck', name, cls });
+    if (r && r.error) throw new Error(r.error);
+    if (!r.found) bad('We could not find that name in ' + escapeHtml(cls) + '. Check the spelling and the class, or ask the school.');
+    else if (r.many){
+      if (!picked && r.names && r.names.length > 1){
+        stuNames = r.names;
+        const box = document.getElementById('lg-stu-pick');
+        box.innerHTML = '<div class="gate-sub" style="font-weight:700;margin:0 0 8px;">Tap your name:</div>' + r.names.map((n, i) => '<button type="button" class="stu-pick-btn" onclick="stuPick(' + i + ')">' + escapeHtml(n) + '</button>').join('');
+        box.style.display = 'block'; document.getElementById('lg-stu-step2').style.display = 'none';
+        stuStepNo = 1; btn.textContent = 'Continue';
+      } else bad('More than one pupil in ' + escapeHtml(cls) + ' has that name. Please ask the school.');
+    }
+    else if (r.noPin) bad('Your PIN has not been given to you yet. Please ask the school.');
+    else stuShowPin(r.name || name);
+  }catch(e){ bad(stuNetMsg(e)); }
+  btn.disabled = false; if (stuStepNo === 1) btn.textContent = 'Continue';
+}
+function stuPick(i){ const n = stuNames[i]; if (!n) return; document.getElementById('login-error').innerHTML = ''; stuCheckName(n, document.getElementById('lg-stu-class').value, true); }
 async function stuInlineLogin(){
   const errEl = document.getElementById('login-error'); errEl.innerHTML = '';
   const bad = m => { errEl.innerHTML = '<div class="gate-error">' + m + '</div>'; };
-  const name = document.getElementById('lg-stu-name').value.replace(/\s+/g, ' ').trim(), cls = document.getElementById('lg-stu-class').value, pin = document.getElementById('lg-stu-pin').value.trim();
-  if (name.replace(/[^A-Za-z0-9]/g, '').length < 3) return bad('Please type your name.');
-  if (!cls) return bad('Please choose your class.');
+  const typed = document.getElementById('lg-stu-name').value.replace(/\s+/g, ' ').trim(), cls = document.getElementById('lg-stu-class').value;
+  if (stuStepNo === 1){
+    if (typed.replace(/[^A-Za-z0-9]/g, '').length < 3) return bad('Please type your name.');
+    if (!cls) return bad('Please choose your class.');
+    return stuCheckName(typed, cls, false);
+  }
+  const pin = document.getElementById('lg-stu-pin').value.trim();
   if (!pin) return bad('Please type your PIN.');
   const btn = document.getElementById('login-btn'); btn.disabled = true; btn.textContent = 'Signing in…';
   try{
-    const r = await stuTransport({ action: 'stuLogin', name, cls, pin });
+    const r = await stuTransport({ action: 'stuLogin', name: stuChosen || typed, cls, pin });
     if (r && r.error) throw new Error(r.error);
     document.getElementById('lg-stu-pin').value = '';
     openStudentApp(r.token);
-  }catch(e){ bad(e && e.message === 'net' || (e && /fetch|network/i.test(e.message || '')) ? 'No connection. Please check your internet and try again.' : escapeHtml((e && e.message) || 'Could not sign in.')); }
+  }catch(e){ bad(stuNetMsg(e)); }
   btn.disabled = false; btn.textContent = 'Log in';
 }
 /* ---------- eSkooly-style grouped sidebar with menu search + breadcrumbs ---------- */
