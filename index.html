@@ -3243,7 +3243,7 @@ function renderMessages(){
   const rows = list.map(m => {
     const mine = m.from === me.id, unread = !mine && String(m.createdAt) > seenBefore;
     return '<div class="msg-row' + (unread ? ' unread' : '') + (m.kind === 'birthday' ? ' bday' : '') + '"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><strong>' + (mine ? 'You → ' + escapeHtml(m.toName || '') : escapeHtml(m.fromName || '') + (m.to === 'all' ? ' · to everyone' : m.to === 'teachers' ? ' · to all teachers' : '')) + '</strong><span class="hint" style="margin:0;">' + escapeHtml(fmtDateTime(m.createdAt)) + '</span></div><div style="margin-top:4px;white-space:pre-wrap;">' + escapeHtml(m.text) + '</div>'
-      + (isAdmin ? '<div style="margin-top:4px;"><button class="btn btn-sm btn-danger" onclick="msgDelete(\'' + m.id + '\')">Delete</button></div>' : '') + '</div>';
+      + '<div style="margin-top:6px;display:flex;gap:8px;align-items:center;"><button class="like-btn' + ((m.likes || []).indexOf(me.id) >= 0 ? ' on' : '') + '" onclick="msgLike(\'' + m.id + '\')">' + ((m.likes || []).indexOf(me.id) >= 0 ? '❤️' : '🤍') + ' ' + ((m.likes || []).length || '') + '</button>' + (isAdmin ? '<button class="btn btn-sm btn-danger" onclick="msgDelete(\'' + m.id + '\')">Delete</button>' : '') + '</div></div>';
   }).join('');
   const inbox = '<div class="panel"><h3>Messages</h3>' + (rows || '<div class="empty-state">No messages yet.</div>') + '</div>';
   const staff = isAdmin ? '<div class="panel"><h3>Staff: who has been active</h3><p class="hint">Messages wait for a teacher and appear the next time they open the app. For someone who has not been on, also nudge them by WhatsApp or SMS.</p><div id="msg-staff">Loading...</div></div>' : '';
@@ -3265,6 +3265,12 @@ function msgComposeBday(){
   const to = sel.value, toName = sel.options[sel.selectedIndex].text;
   const t = (DATA.teachers || []).find(x => x.id === to);
   msgSend(to, toName, (t ? 'Dear ' + String(t.name).split(' ')[0] + ', ' : '') + bdayWish(), 'birthday'); renderMessages();
+}
+function msgLike(id){
+  const m = (DATA.messages || []).find(x => x.id === id); if (!m) return;
+  const me = msgMe(); const a = (m.likes || []).slice(); const i = a.indexOf(me.id);
+  if (i >= 0) a.splice(i, 1); else a.push(me.id);
+  m.likes = a; m.updatedAt = new Date().toISOString(); saveData(); renderMessages();
 }
 function msgDelete(id){
   if (!confirm('Delete this message for everyone?')) return;
@@ -8045,6 +8051,7 @@ function generateStaffId(rec){
   return stem + String(n).padStart(2, '0');
 }
 function teachingPosition(t){
+  if (t && t.positionTitle) return t.positionTitle;
   const parts = [];
   if (DATA.meta.headTeacherId === t.id) parts.push('Head Teacher');
   const cts = (t.allocations || []).filter(a => a.subject === '*').map(a => a.class);
@@ -8128,6 +8135,7 @@ function saveStaff(){
     if (!t) return;
     if (!name){ toast('Enter the name.'); return; }
     t.name = name; t.emisCode = document.getElementById('staff-emis').value.trim();
+    { const derived = (() => { const keep = t.positionTitle; t.positionTitle = ''; const d = teachingPosition(t); t.positionTitle = keep; return d; })(); t.positionTitle = (position && position !== derived) ? position : ''; }
     if (phone){ const ph = (t.phones || []).slice(); ph[0] = phone; t.phones = ph.filter(Boolean); t.phone = phone; }
     staffApplyExtras(t);
     if (pendingStaffPhoto) t.photo = pendingStaffPhoto;
@@ -8165,7 +8173,7 @@ function editStaffRow(key){
   document.getElementById('staff-edit-kind').value = isT ? 'teacher' : 'staff';
   document.getElementById('staff-name').value = o.name;
   document.getElementById('staff-position').value = isT ? teachingPosition(o) : (o.position || '');
-  document.getElementById('staff-position').disabled = isT;
+  document.getElementById('staff-position').disabled = false;
   document.getElementById('staff-emis').disabled = !isT;
   document.getElementById('staff-emis').value = isT ? (o.emisCode || '') : '';
   document.getElementById('staff-phone').value = o.phone || '';
@@ -11171,6 +11179,7 @@ function applyTheme(id){
   let el = document.getElementById('gj-theme');
   if (!el){ el = document.createElement('style'); el.id = 'gj-theme'; document.head.appendChild(el); }
   el.textContent = gjThemeCss(t);
+  { const fl = document.getElementById('gj-float'); if (fl && fl.previousElementSibling !== el) document.head.appendChild(fl); }
   document.documentElement.setAttribute('data-gj-theme', t.id);
   gjLoadFont(t.font);
   try{ localStorage.setItem('gj_theme', String(id)); }catch(e){}
@@ -11327,6 +11336,52 @@ function gjLook2Init(){
     window._gjFoldObs.observe(m, { childList: true, subtree: true });
   }
 }
+
+/* ================================================================ GJ-FLOAT: floating, rounded, responsive look for every theme */
+const GJ_FLOAT_CSS = `@media screen{
+body{background:radial-gradient(900px 500px at 8% -8%, color-mix(in srgb,var(--gold) 14%,transparent), transparent 65%), radial-gradient(800px 480px at 100% 0%, color-mix(in srgb,var(--ink) 9%,transparent), transparent 60%), var(--paper) !important;background-attachment:fixed !important;}
+.topbar{margin:10px 12px 0 !important;border-radius:20px !important;top:10px !important;box-shadow:0 10px 30px rgba(15,23,42,.20) !important;backdrop-filter:blur(8px);}
+.shell{padding:6px 0 18px 0;}
+.view.active{animation:gjIn .3s ease both;}
+@keyframes gjIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.panel,.stat-card,.modal,.emp-card,.msg-row,.bday-card,.gate-card,.rp-box{border-radius:22px !important;border:1px solid color-mix(in srgb,var(--line) 60%,transparent) !important;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px rgba(15,23,42,.08) !important;transition:transform .22s ease,box-shadow .22s ease;}
+.stat-card{border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent) !important;}
+.panel:hover,.stat-card:hover,.emp-card:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 22px 48px rgba(15,23,42,.14) !important;}
+.panel.gj-acc:hover{transform:translateY(-2px);}
+.gate-card{box-shadow:0 30px 90px rgba(0,0,0,.35) !important;}
+.btn,.btn-sm,.btn-primary,.btn-solid,.btn-gold,.btn-danger,.logout-btn,.role-pill,.sync-pill,.ac-tab,.tt-tab,.tab,.sub-tab,.status-badge,.menu-btn{border-radius:999px !important;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,color .16s ease,border-color .16s ease;}
+.btn:hover,.btn-primary:hover,.btn-solid:hover,.btn-gold:hover,.logout-btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(15,23,42,.18);}
+.btn:active,.btn-primary:active,.btn-solid:active,.logout-btn:active{transform:translateY(0) scale(.96);box-shadow:none;}
+.btn-primary,.btn-solid{box-shadow:0 6px 16px color-mix(in srgb,var(--ink) 30%,transparent);}
+input,select,textarea,.field input,.field select,.field textarea{border-radius:14px !important;transition:box-shadow .18s,border-color .18s,background .18s;}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 28%,transparent) !important;border-color:var(--gold) !important;outline:none !important;}
+input[type=checkbox],input[type=radio],input[type=color],input[type=file]{border-radius:6px !important;}
+table{border-collapse:separate;border-spacing:0;}
+thead th:first-child{border-top-left-radius:12px;} thead th:last-child{border-top-right-radius:12px;}
+tbody tr{transition:background .15s,transform .15s;} tbody tr:hover{background:color-mix(in srgb,var(--gold) 9%,transparent) !important;}
+.emp-card:hover img,.emp-card:hover .emp-av{transform:scale(1.06) rotate(-2deg);} .emp-card img,.emp-card .emp-av{transition:transform .25s;box-shadow:0 6px 16px rgba(15,23,42,.18);}
+.msg-row{transition:transform .18s,box-shadow .18s;} .msg-row:hover{transform:translateX(3px);}
+.like-btn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;transition:transform .15s,background .15s;} .like-btn:hover{transform:scale(1.08);} .like-btn.on{background:#ffe4ea;border-color:#f9a8b8;color:#be123c;} .like-btn:active{transform:scale(.9);}
+.toast{border-radius:999px !important;box-shadow:0 14px 34px rgba(0,0,0,.28) !important;}
+.modal-overlay{backdrop-filter:blur(6px);} .modal{box-shadow:0 30px 80px rgba(0,0,0,.35) !important;}
+.nav-item{border-radius:14px !important;transition:transform .16s,background .16s,box-shadow .16s;} .nav-item:hover{transform:translateX(4px);} .nav-item.active{box-shadow:0 6px 16px rgba(15,23,42,.14);}
+.view-title{letter-spacing:-.015em;}
+.role-btn.lg-role{border-radius:50% !important;transition:transform .18s,box-shadow .18s;} .role-btn.lg-role:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 14px 28px rgba(15,23,42,.2);}
+.lg-field{border-radius:16px;border:1px solid var(--line) !important;padding:6px 14px !important;background:var(--panel);transition:box-shadow .18s;} .lg-field:focus-within{box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 28%,transparent);}
+::-webkit-scrollbar-thumb{border-radius:99px;}
+}
+@media screen and (min-width:821px){
+.shell{gap:0;}
+.sidebar{margin:6px 0 12px 12px !important;border-radius:22px !important;border:0 !important;box-shadow:0 12px 34px rgba(15,23,42,.14) !important;min-height:auto !important;align-self:flex-start;position:sticky;top:78px;max-height:calc(100vh - 92px);overflow:auto;}
+}
+@media screen and (max-width:820px){
+.topbar{margin:6px 8px 0 !important;border-radius:16px !important;}
+.panel,.stat-card{border-radius:18px !important;}
+.content{padding:12px 10px !important;}
+.view-header{align-items:flex-start;}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}`;
+(function(){ const el = document.createElement('style'); el.id = 'gj-float'; el.textContent = GJ_FLOAT_CSS; document.head.appendChild(el); })();
 
 try{ applyTheme(localStorage.getItem('gj_theme') || 'classic'); }catch(e){}
 
@@ -11668,7 +11723,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.09-h';
+const APP_VERSION = '2026.11.09-i';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
