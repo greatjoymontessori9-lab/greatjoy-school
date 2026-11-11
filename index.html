@@ -495,6 +495,7 @@
   .rc2-num{text-align:center;}
   .rc2-center{text-align:center;}
   .rc2-total-row td{background:#F4C9A0 !important;font-weight:700;}
+  .rc2-fee-note{position:relative;z-index:1;border:1px solid #000;background:#EDEDED;padding:4px 8px;margin:8px 0 0;font-size:11px;text-align:center;}
   .rc2-bill-title{text-align:center;font-weight:700;text-decoration:underline;margin:14px 0 6px;font-size:12px;position:relative;z-index:1;}
   .rc2-bill-table{width:100%;border-collapse:collapse;position:relative;z-index:1;font-size:11.5px;margin-bottom:14px;}
   .rc2-bill-table th,.rc2-bill-table td{border:1px solid #000;padding:5px 8px;text-align:center;}
@@ -1112,6 +1113,7 @@
               <option value="balance">Sort: Balance (highest first)</option>
             </select>
           </div>
+          <div id="student-count" style="margin:2px 2px 10px;font-weight:700;"></div>
           <div id="students-table-wrap"></div>
         </div>
       </div>
@@ -1569,8 +1571,10 @@
             </div>
           </div>
           <div class="panel">
-            <h3>Next term bill (shown on every report card)</h3>
+            <h3>Next term fees</h3>
+            <p class="hint" style="margin-top:0;">The report card has no bill table any more. A single line appears above the signatures only when you enter a <strong>fee increase</strong> below, or when a child has <strong>arrears</strong>.</p>
             <div class="grid-2">
+              <div class="field"><label>Fee increase next term (GH₵, leave 0 if none)</label><input type="number" id="ac-set-feeinc"></div>
               <div class="field"><label>Arrears</label><input type="number" id="ac-set-arrears"></div>
               <div class="field"><label>Tuition</label><input type="number" id="ac-set-tuition"></div>
               <div class="field"><label>Feeding per day</label><input type="number" id="ac-set-feeding"></div>
@@ -4987,6 +4991,8 @@ function renderStudents(){
     list.sort((a,b)=> a.s.name.localeCompare(b.s.name));
   }
 
+  const cntEl = document.getElementById('student-count');
+  if (cntEl) cntEl.innerHTML = DATA.students.length === 0 ? '' : '<span class="status-badge" style="font-size:13px;padding:5px 12px;">' + list.length + (list.length === 1 ? ' student' : ' students') + ' found</span>' + (list.length !== DATA.students.length ? ' <span class="hint" style="margin:0 0 0 6px;">out of ' + DATA.students.length + ' on record</span>' : '');
   if (DATA.students.length === 0){
     document.getElementById('students-table-wrap').innerHTML =
       '<div class="empty-state"><div class="big">No students yet</div>Add one, or use Import Students to load your whole list at once.</div>';
@@ -7733,6 +7739,7 @@ function loadAcSettingsForm(){
   document.getElementById('ac-set-termstart').value = s.termStart || '';
   document.getElementById('ac-set-holidays').value = Array.isArray(s.holidays) ? s.holidays.join(', ') : (s.holidays || '');
   updateAttendancePreview();
+  document.getElementById('ac-set-feeinc').value = s.feeIncrease || 0;
   document.getElementById('ac-set-arrears').value = s.arrears || 0;
   document.getElementById('ac-set-tuition').value = s.tuition || 0;
   document.getElementById('ac-set-feeding').value = s.feeding || 0;
@@ -7750,6 +7757,7 @@ function saveAcSettings(){
     attendanceOutOf: document.getElementById('ac-set-attendance').value,
     termStart: document.getElementById('ac-set-termstart').value,
     holidays: document.getElementById('ac-set-holidays').value.split(/[\s,;]+/).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)),
+    feeIncrease: parseFloat(document.getElementById('ac-set-feeinc').value)||0,
     arrears: parseFloat(document.getElementById('ac-set-arrears').value)||0,
     tuition: parseFloat(document.getElementById('ac-set-tuition').value)||0,
     feeding: parseFloat(document.getElementById('ac-set-feeding').value)||0,
@@ -9591,7 +9599,6 @@ function buildStyledReportCard(key, studentId, opts){
       <tbody>${subjRows}</tbody>
       <tfoot><tr class="rc2-total-row"><td colspan="3" style="text-align:right;">TOTAL</td><td class="rc2-num">${totalAll}</td><td colspan="3"></td></tr></tfoot>
     </table>
-    ${isJ3 && j3ExamNote(c) ? `<div style="font-size:10px;margin:3px 0 6px;color:#444;">${escapeHtml(j3ExamNote(c))}</div>` : ''}
     ${isJ3 ? `<div style="font-weight:700;font-size:11px;margin:6px 0 2px;">MOCK EXAMINATION RESULTS</div><table class="rc2-table rc2-mocktable">
       <thead><tr><th>SUBJECT</th>${mockHead}</tr></thead>
       <tbody>${mockRows}</tbody>
@@ -9603,16 +9610,18 @@ function buildStyledReportCard(key, studentId, opts){
       <div class="rc2-info-row"><span class="rc2-label">CLASS TEACHER'S REMARK:</span><span class="rc2-value rc2-fill rc2-italic">${escapeHtml(s.teacherRemark || j3Rem.teacher || autoFor(c, s).teacher || '')}</span></div>
       <div class="rc2-info-row"><span class="rc2-label">HEAD TEACHER'S REMARK:</span><span class="rc2-value rc2-fill rc2-italic">${escapeHtml(s.headRemark || j3Rem.head || autoFor(c, s).head || '')}</span></div>
     </div>
-    <div class="rc2-bill-title">NEXT TERM BILL</div>
-    <table class="rc2-bill-table">
-      <thead><tr><th>FEES</th>${billItems.map(b=>`<th>${b.label}</th>`).join('')}<th>TOTAL</th></tr></thead>
-      <tbody><tr><td>${escapeHtml((c.level||'').toUpperCase())}</td>${billItems.map(b=>`<td>${b.value?('GH₵'+fmtMoney(b.value)):''}</td>`).join('')}<td>${billTotal?('GH₵'+fmtMoney(billTotal)):''}</td></tr></tbody>
-    </table>
+    ${feeNoticeHtml(set, studentArrears)}
     <div class="rc2-sign">
       ${signatureBoxHtml('CLASS TEACHER', classTeacherFor(c.level, c.class))}
       ${signatureBoxHtml('HEAD TEACHER', headTeacher())}
     </div>
   </div>`;
+}
+function feeNoticeHtml(set, arrears){
+  const inc = +set.feeIncrease || 0, arr = +arrears || 0, parts = [];
+  if (inc > 0) parts.push('SCHOOL FEES INCREASE BY <b>GH₵' + fmtMoney(inc) + '</b> NEXT TERM' + (set.tuition ? ' (NEW TUITION: <b>GH₵' + fmtMoney(set.tuition) + '</b>)' : '') + '.');
+  if (arr > 0) parts.push('ARREARS TO CLEAR: <b>GH₵' + fmtMoney(arr) + '</b>.');
+  return parts.length ? '<div class="rc2-fee-note">' + parts.join(' ') + '</div>' : '';
 }
 function showAcCard(key, studentId){
   window._acCard = { key, studentId };
@@ -12008,7 +12017,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.10-g';
+const APP_VERSION = '2026.11.11-a';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
