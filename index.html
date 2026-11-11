@@ -1856,8 +1856,8 @@ const STORAGE_KEY = 'sfa_data_v1';
    its own server directly — no URL/PIN setup on any device — and is always connected. */
 /* Offline/desktop copy: put your script link and PIN here and the app connects to your school by itself,
    pulls the data and shows the login screen. Leave both empty for the normal online version. */
-const OFFLINE_SCRIPT_URL = '';
-const OFFLINE_PIN = '';
+const OFFLINE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwP74HSMUgEfeWCwzqdYWPW5LXXJWEHG77s_E1fLUQnZpkMuZNKSE7sNKBsLYiic_wO/exec';
+const OFFLINE_PIN = '7222';
 /* When the page is hosted on GitHub: the school script address is in this file, but the school PIN is NOT. Each device is asked for it once and remembers it. */
 let REMOTE_PIN = OFFLINE_PIN;
 if (OFFLINE_SCRIPT_URL && !REMOTE_PIN && !(window.google && window.google.script && window.google.script.run)){
@@ -11952,7 +11952,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.10-e';
+const APP_VERSION = '2026.11.10-f';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
