@@ -971,11 +971,14 @@
       <button class="nav-item admin-only" data-view="import" onclick="showView('import')">Import Students</button>
       <button class="nav-item admin-only" data-view="backup" onclick="showView('backup')">Backup &amp; Restore</button>
       <button class="nav-item admin-only" data-view="academic" onclick="showView('academic')">Academic Records</button>
+      <button class="nav-item admin-only" data-view="schoolanalytics" onclick="showView('schoolanalytics')">School Analytics</button>
       <button class="nav-item" data-view="summary" onclick="showView('summary')">Student Summary</button>
       <button class="nav-item admin-only" data-view="idcards" onclick="showView('idcards')">ID Cards</button>
       <button class="nav-item admin-only" data-view="teacheraccounts" onclick="showView('teacheraccounts')">Teacher Accounts</button>
       <button class="nav-item admin-only" data-view="staff" onclick="showView('staff')">Staff</button>
       <button class="nav-item admin-only" data-view="timetable" onclick="showView('timetable')">Timetable</button>
+      <button class="nav-item admin-only" data-view="departments" onclick="showView('departments')">Departments</button>
+      <button class="nav-item admin-only" data-view="duty" onclick="showView('duty')">Duty Roster</button>
       <button class="nav-item admin-only" data-view="planner" onclick="showView('planner')">Lesson Planner</button>
       <button class="nav-item admin-only" data-view="studentaccess" onclick="showView('studentaccess')">Student Access</button>
       <button class="nav-item admin-only" data-view="settings" onclick="showView('settings')">Settings</button>
@@ -1514,9 +1517,14 @@
                 <input type="text" id="ac-class" placeholder="e.g. P1, J2, KG1">
               </div>
             </div>
+            <div class="panel" style="background:var(--paper-2);border:1px dashed var(--line);box-shadow:none;">
+              <strong>Easy way: download a class sheet, fill it in, import it back</strong>
+              <p class="hint" style="margin:4px 0 8px;">The sheet comes with the children's names already in it (and any marks already saved). Fill in the marks in Excel or Google Sheets, save it as <b>CSV</b>, and choose it below. This works without internet.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><select id="ac-sheet-class"></select><button class="btn btn-solid btn-sm" onclick="acSheetDownload(document.getElementById('ac-sheet-class').value)">Download this class (CSV)</button><button class="btn btn-sm" onclick="acSheetDownload('__all')">Download every class</button></div>
+            </div>
             <div class="field">
-              <label for="ac-file">Assessment spreadsheet (.xlsx)</label>
-              <input type="file" id="ac-file" accept=".xlsx,.xls,.xlsm" onchange="handleAcFile(this)">
+              <label for="ac-file">Filled class sheet (.csv) or assessment spreadsheet (.xlsx)</label>
+              <input type="file" id="ac-file" accept=".csv,.xlsx,.xls,.xlsm,text/csv" onchange="handleAcFile(this)">
             </div>
             <div id="ac-sheet-picker"></div>
             <div id="ac-import-preview"></div>
@@ -1596,6 +1604,19 @@
         </div>
         <div id="tt-tabs" class="tt-tabs"></div>
         <div id="tt-body"></div>
+      </div>
+
+      <div class="view" id="view-schoolanalytics">
+        <div class="view-header"><div><h1 class="view-title">School Analytics</h1><p class="view-sub">How the whole school and each class are picking up, by subject and by student.</p></div></div>
+        <div id="an2-root"></div>
+      </div>
+      <div class="view" id="view-departments">
+        <div class="view-header"><div><h1 class="view-title">Departments</h1><p class="view-sub">Pre-school, Primary and JHS teachers, worked out from the timetable. Message a whole department in one go.</p></div></div>
+        <div id="dp-root"></div>
+      </div>
+      <div class="view" id="view-duty">
+        <div class="view-header"><div><h1 class="view-title">Duty Roster</h1><p class="view-sub">Teachers and seniors on duty each week, one boy and one girl in each pair.</p></div></div>
+        <div id="du-root"></div>
       </div>
 
       <div class="view" id="view-planner">
@@ -2145,6 +2166,8 @@ function buildSyncMetaPayload(){
     cashierAccess: cashierList(),
     timetable: DATA.timetable || null,
     timetableResult: ttSyncResult(),
+    departments: DATA.departments || null,
+    dutyRoster: DATA.dutyRoster || null,
     uiTheme: DATA.uiTheme || 'classic',
     loginFlyers: Array.isArray(DATA.loginFlyers) ? DATA.loginFlyers.filter(g => String(g.img || '').indexOf('data:') !== 0) : null,   // only pictures already on Drive travel
     sigGallery: (DATA.sigGallery || []).filter(g => String(g.img || '').indexOf('data:') !== 0)   // only pictures already on Drive travel in the shared settings
@@ -2180,6 +2203,8 @@ function applySyncMetaFromServer(serverMeta){
   if (newer('cashierAccess') && Array.isArray(serverMeta.cashierAccess.value)){ DATA.cashierAccess = serverMeta.cashierAccess.value; local.cashierAccess = serverMeta.cashierAccess.updatedAt; }
   if (newer('timetable') && serverMeta.timetable.value && serverMeta.timetable.value.schedules){ DATA.timetable = serverMeta.timetable.value; local.timetable = serverMeta.timetable.updatedAt; }
   if (newer('timetableResult') && serverMeta.timetableResult.value && serverMeta.timetableResult.value.grid){ DATA.timetableResult = serverMeta.timetableResult.value; local.timetableResult = serverMeta.timetableResult.updatedAt; }
+  if (newer('departments') && serverMeta.departments.value && typeof serverMeta.departments.value === 'object'){ DATA.departments = serverMeta.departments.value; local.departments = serverMeta.departments.updatedAt; }
+  if (newer('dutyRoster') && serverMeta.dutyRoster.value && typeof serverMeta.dutyRoster.value === 'object'){ DATA.dutyRoster = serverMeta.dutyRoster.value; local.dutyRoster = serverMeta.dutyRoster.updatedAt; }
   if (newer('uiTheme') && typeof serverMeta.uiTheme.value === 'string'){ DATA.uiTheme = serverMeta.uiTheme.value; local.uiTheme = serverMeta.uiTheme.updatedAt; try{ applyTheme(DATA.uiTheme); }catch(e){} }
   if (newer('loginFlyers') && Array.isArray(serverMeta.loginFlyers.value)){
     const pend = (DATA.loginFlyers || []).filter(g => String(g.img || '').indexOf('data:') === 0 && g.id !== 'builtin');
@@ -2883,7 +2908,7 @@ async function hostedBoot(){
           const r = await hostedCall({ action:'createSchool', schoolName: nm, adminPassword: DATA.auth.adminPassword, cashierPassword: DATA.auth.cashierPassword, logo: DATA.meta.logo || null });
           const now = new Date().toISOString();
           DATA.sync.metaUpdatedAt = DATA.sync.metaUpdatedAt || {};
-        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
+        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
           DATA.sync.pushedHashes = {}; DATA.sync.lastKnownServerIds = {}; DATA.sync.dirty = true;
           saveData();
         }
@@ -3039,7 +3064,7 @@ async function connectToExistingLedger(){
 const PROPRIETOR_ID = 'proprietor';
 const PROPRIETOR_NAME = 'Ebenezer Okine';
 const PROPRIETOR_DEFAULT_PIN = '7272';
-const PROP_VIEWS = ['messages','messages-p','overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
+const PROP_VIEWS = ['schoolanalytics','departments','duty','messages','messages-p','overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
 let voBypass = false;
 function isProprietorRec(t){ return !!t && (t.isProprietor === true || t.id === PROPRIETOR_ID); }
 /* The proprietor lives in the teachers list (so it syncs like every other login). The stand-in copy is stamped as
@@ -3252,6 +3277,7 @@ function msgVisible(m){
   const me = msgMe();
   if (m.from === me.id || m.to === 'all' || m.to === me.id) return true;
   if (m.to === 'teachers' && (me.kind === 'teacher' || me.kind === 'proprietor' || me.kind === 'admin')) return true;
+  if (typeof m.to === 'string' && m.to.indexOf('dept:') === 0){ if (me.kind === 'admin' || me.kind === 'proprietor') return true; try{ return deptMembers(m.to.slice(5)).some(t => t.id === me.id); }catch(e){ return false; } }
   return false;
 }
 function msgFresh(m){ return m.kind !== 'birthday' || (Date.now() - new Date(m.createdAt).getTime()) < 86400000; }   // birthday notes vanish after 24 hours
@@ -3272,6 +3298,8 @@ function msgRecipients(){
   const me = msgMe(), out = [];
   if (me.kind !== 'teacher') out.push(['all', 'Everyone (all staff)'], ['teachers', 'All teachers']);
   else out.push(['all', 'Everyone (all staff)']);
+  DEPTS.forEach(d => out.push(['dept:' + d.id, d.name + ' department']));
+  out.push(['dept:duty', 'Teachers on duty this week']);
   if (me.kind !== 'admin') out.push(['admin', 'Admin']);
   if (me.kind !== 'cashier') out.push(['cashier', 'Cashier']);
   (DATA.teachers || []).filter(t => t.id !== me.id).forEach(t => out.push([t.id, (isProprietorRec(t) ? 'Proprietor · ' : '') + t.name]));
@@ -4695,7 +4723,7 @@ function toggleSidebar(){
 function showView(name){
   if (session.access && !accessAllows(name)){ toast('You do not have access to that page.'); return; }
   if (session.role === 'proprietor'){ if (PROP_VIEWS.indexOf(name) < 0) return; }
-  else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess'].includes(name)) return;
+  else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess','schoolanalytics','departments','duty'].includes(name)) return;
   if (name === 'overview' && session.role !== 'admin' && session.role !== 'proprietor') return;
   if (session.role === 'teacher' && !['messages','teacherhome','teacherscores','summary','attendance','assessments','timetable','planner'].includes(name)) return;
   if ((name === 'timetable' || name === 'planner') && session.role !== 'admin' && session.role !== 'teacher') return;
@@ -4714,7 +4742,7 @@ function showView(name){
   const renderers = {dashboard:renderDashboard, admission:renderAdmission, students:renderStudents, payments:renderPaymentsView,
                       admissionfees:renderAdmissionFeesView, feedingfees:renderFeedingFeesView, teacherscores:renderTeacherScores,
                       fees:renderFees, import:renderImportView, backup:()=>{}, academic:renderAcademic, settings:renderSettingsView,
-                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, messages:renderMessages, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner};
+                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, messages:renderMessages, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner, schoolanalytics:renderSchoolAnalytics, departments:renderDepartments, duty:renderDuty};
   ovAutoRefresh(name === 'overview');
   if (renderers[name]) renderers[name]();
   if (name === 'dashboard'){ try{ gjWelcome(); }catch(e){} }
@@ -6091,8 +6119,25 @@ const DEFAULT_MOCK_GRADING = {
   bestOthers: 2
 };
 function mockGrading(){ const g = DATA.mockGrading; return (g && g.bands && g.bands.length) ? g : DEFAULT_MOCK_GRADING; }
+/* mocks arrange themselves by month: the date typed in, else the month named in the title (September Mock 1 2026), else the mock number */
+const MOCK_MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+function mockMonthKey(m){
+  const d = String((m && m.date) || '').slice(0, 7);
+  const nm = String((m && m.name) || '').toLowerCase();
+  const mi = MOCK_MONTHS.findIndex(x => nm.indexOf(x) >= 0 || nm.indexOf(x.slice(0, 3) + ' ') >= 0);
+  if (mi >= 0){   // the month written in the title wins over the date box (which defaults to today)
+    const y = (/(20\d{2})/.exec(nm) || [])[1] || (/^\d{4}/.test(d) ? d.slice(0, 4) : String(((DATA.academic || {}).settings || {}).year || new Date().getFullYear()));
+    return y + '-' + String(mi + 1).padStart(2, '0');
+  }
+  if (/^\d{4}-\d{2}$/.test(d)) return d;
+  return '9999-99';
+}
 function mockListSorted(){
-  return (DATA.mockList || []).slice().sort((a,b) => String(a.date||'').localeCompare(String(b.date||'')) || String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || String(a.id).localeCompare(String(b.id)));
+  return (DATA.mockList || []).slice().sort((a, b) => {
+    const ka = mockMonthKey(a), kb = mockMonthKey(b); if (ka !== kb) return ka < kb ? -1 : 1;
+    const na = +((/mock\s*(\d+)/i.exec(a.name || '') || [])[1] || 0), nb = +((/mock\s*(\d+)/i.exec(b.name || '') || [])[1] || 0); if (na !== nb) return na - nb;
+    return String(a.date || '').localeCompare(String(b.date || '')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || String(a.id).localeCompare(String(b.id));
+  });
 }
 function mockBandFor(score){
   const bands = mockGrading().bands.slice().sort((a,b) => b.min - a.min);
@@ -7774,7 +7819,9 @@ function saveAcSettings(){
 function numOrNull(v){ if (v===null||v===undefined||v==='') return null; const n = parseFloat(v); return isNaN(n)?null:n; }
 
 function parseAssessmentSheet(ws){
-  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  return parseAssessmentRows(XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null}));
+}
+function parseAssessmentRows(rows){
   const subjectRow = rows[1] || [];
   const subHeaderRow = rows[2] || [];
   const dataStart = 3;
@@ -7834,6 +7881,11 @@ function gjLoadXLSX(){
 function handleAcFile(input){
   const file = input.files[0];
   if (!file) return;
+  if (/\.csv$/i.test(file.name) || file.type === 'text/csv'){
+    const rd = new FileReader();
+    rd.onload = e => { acWorkbook = null; document.getElementById('ac-sheet-picker').innerHTML = ''; acRunCsv(String(e.target.result || '')); };
+    rd.readAsText(file); return;
+  }
   if (typeof XLSX === 'undefined'){
     document.getElementById('ac-import-preview').innerHTML = '<div class="hint">Loading the spreadsheet reader…</div>';
     gjLoadXLSX().then(() => handleAcFile(input)).catch(() => { document.getElementById('ac-import-preview').innerHTML = '<div class="gate-error">Could not load the spreadsheet-reading library. Check your internet connection and try again.</div>'; });
@@ -7866,6 +7918,9 @@ function runAcParse(sheetName){
     document.getElementById('ac-import-preview').innerHTML = '<div class="gate-error">No student rows were recognized in that sheet. It should have names in column B starting row 4, with subject score columns from column C.</div>';
     return;
   }
+  acShowPreview(parsed, false);
+}
+function acShowPreview(parsed, sameTermDefault){
   const level = document.getElementById('ac-level').value;
   const cls = document.getElementById('ac-class').value.trim();
   if (!cls){
@@ -7877,6 +7932,7 @@ function runAcParse(sheetName){
     <div class="hint" style="margin-top:12px;">Found <strong>${parsed.students.length}</strong> students and <strong>${parsed.subjects.length}</strong> subjects (${escapeHtml(parsed.subjects.join(', '))}).</div>
     <div class="import-preview"><table><thead><tr><th>Name</th><th>Subjects with scores</th></tr></thead><tbody>${rows}</tbody>
     ${parsed.students.length>10 ? `<tfoot><tr><td colspan="2" class="hint">...and ${parsed.students.length-10} more</td></tr></tfoot>`:''}</table></div>
+    ${DATA.academic.classes[level + '|' + cls] ? `<label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;"><input type="checkbox" id="ac-same-term" ${sameTermDefault ? 'checked' : ''}> <span><b>Same term: just update the marks.</b> <span class="hint" style="margin:0;">Leave it ticked when you are filling in or correcting this term's sheet. Untick it only when this is a new term, so last term is kept in history.</span></span></label>` : ''}
     <button class="btn btn-solid" style="margin-top:12px;" onclick='confirmAcImport(${JSON.stringify(level)}, ${JSON.stringify(cls)})'>Import into ${escapeHtml(level)} ${escapeHtml(cls)}</button>`;
   window._acPendingParse = parsed;
 }
@@ -7899,7 +7955,8 @@ function confirmAcImport(level, cls){
 
   // if re-importing over an existing class, archive its current state as term history first
   // (tag the archive with the term THAT data was originally imported under, not today's settings)
-  if (existing && existing.students.length > 0){
+  const sameTerm = !!(document.getElementById('ac-same-term') && document.getElementById('ac-same-term').checked);
+  if (existing && existing.students.length > 0 && !sameTerm){
     existing.termHistory = existing.termHistory || [];
     existing.termHistory.push({
       id: uid(),
@@ -7929,7 +7986,7 @@ function confirmAcImport(level, cls){
     };
   });
   const termHistory = existing ? (existing.termHistory || []) : [];
-  const termLabel = { term: DATA.academic.settings.term || '', year: DATA.academic.settings.year || '' };
+  const termLabel = sameTerm && existing && existing.termLabel ? existing.termLabel : { term: DATA.academic.settings.term || '', year: DATA.academic.settings.year || '' };
   DATA.academic.classes[key] = { level, class: cls, subjects: parsed.subjects, students, termHistory, termLabel };
   saveData();
   toast(`Imported ${students.length} students into ${level} ${cls}${termHistory.length ? ' (previous term archived to history)' : ''}.`);
@@ -7940,7 +7997,100 @@ function confirmAcImport(level, cls){
   populateAcClassDropdown();
 }
 
+/* ---------- class sheets as CSV: download, fill in, import back ---------- */
+const AC_DEFAULT_SUBJECTS = {
+  Preschool: ['LANGUAGE & LITERACY','NUMERACY','PHONICS','OWOP','WRITING','CREATIVE ART'],
+  Primary: ['ENGLISH LANGUAGE','MATHEMATICS','SCIENCE','OWOP','RME','COMPUTING','CREATIVE ART','FANTE','FRENCH'],
+  JHS: ['ENGLISH LANGUAGE','MATHEMATICS','SCIENCE','SOCIAL STUDIES','RME','COMPUTING','CREATIVE ART','CAREER TECHNOLOGY','FANTE']
+};
+function acSheetClasses(){
+  const out = [], seen = {};
+  Object.keys((DATA.academic && DATA.academic.classes) || {}).forEach(k => { const c = DATA.academic.classes[k]; out.push({ level: c.level, cls: c.class }); seen[c.level + '|' + c.class] = 1; });
+  Object.keys(TEACHER_SETUP_CLASSES_BY_LEVEL).forEach(l => TEACHER_SETUP_CLASSES_BY_LEVEL[l].forEach(c => { if (!seen[l + '|' + c]) out.push({ level: l, cls: c }); }));
+  return out;
+}
+function acSheetFillSelect(){
+  const sel = document.getElementById('ac-sheet-class'); if (!sel) return;
+  const keep = sel.value;
+  sel.innerHTML = acSheetClasses().map(x => '<option value="' + escapeHtml(x.level + '|' + x.cls) + '">' + escapeHtml(x.cls) + '</option>').join('');
+  if (keep) sel.value = keep;
+}
+function acSheetBuild(level, cls){
+  const ex = DATA.academic.classes[level + '|' + cls], subs = ex && ex.subjects && ex.subjects.length ? ex.subjects : AC_DEFAULT_SUBJECTS[level] || AC_DEFAULT_SUBJECTS.Primary;
+  const stus = [], seen = {};
+  if (ex) ex.students.forEach(s => { stus.push({ name: s.name, rec: s }); seen[String(s.name).trim().toUpperCase()] = 1; });
+  (DATA.students || []).filter(s => (s.status || 'active') === 'active' && classesEquivalent(s.class, cls) && !seen[String(s.name).trim().toUpperCase()]).sort((a, b) => String(a.name).localeCompare(String(b.name))).forEach(s => stus.push({ name: s.name, rec: null }));
+  const set = DATA.academic.settings || {};
+  const rows = [['GJ-CLASS-SHEET', level, cls, ((set.term || '') + ' ' + (set.year || '')).trim()]];
+  const head = ['NAME'];
+  subs.forEach(x => { head.push(x + ' | CLASS SCORE (50)'); head.push(x + ' | EXAM SCORE (50)'); });
+  head.push('CONDUCT', 'INTEREST', 'ATTENDANCE', 'ARREARS'); rows.push(head);
+  stus.forEach(s => {
+    const r = [s.name];
+    subs.forEach(x => { const sc = s.rec && s.rec.scores && s.rec.scores[x]; r.push(sc ? sc.classScore : '', sc ? sc.examScore : ''); });
+    r.push(s.rec ? s.rec.conduct || '' : '', s.rec ? s.rec.interest || '' : '', s.rec ? s.rec.attendance || '' : '', s.rec && s.rec.arrears ? s.rec.arrears : '');
+    rows.push(r);
+  });
+  return { rows, count: stus.length };
+}
+function acCsvText(rows){ return '\uFEFF' + rows.map(r => r.map(v => { v = v === null || v === undefined ? '' : String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\r\n'); }
+function acSheetDownload(which){
+  const list = which === '__all' ? acSheetClasses().filter(x => { const k = x.level + '|' + x.cls; return DATA.academic.classes[k] || (DATA.students || []).some(s => classesEquivalent(s.class, x.cls)); }) : [(function(){ const p = String(which).split('|'); return { level: p[0], cls: p.slice(1).join('|') }; })()];
+  if (!list.length){ toast('No classes with children yet.'); return; }
+  list.forEach((x, i) => setTimeout(() => {
+    const b = acSheetBuild(x.level, x.cls);
+    downloadBlob(new Blob([acCsvText(b.rows)], { type: 'text/csv;charset=utf-8' }), 'class-sheet-' + x.cls.replace(/[^a-z0-9]+/gi, '-') + '.csv');
+  }, i * 400));
+  toast(list.length > 1 ? 'Downloading ' + list.length + ' class sheets…' : 'Class sheet downloaded. Fill it in and import it back.');
+}
+function acCsvRows(text){
+  text = String(text || '').replace(/^\uFEFF/, '');
+  const first = text.split(/\r?\n/).find(l => l.trim()) || '', delim = (first.split(';').length > first.split(',').length) ? ';' : (first.split('\t').length > first.split(',').length ? '\t' : ',');
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if (q){ if (ch === '"'){ if (text[i + 1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === delim){ row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r'){ if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(c => c.trim() !== '')) rows.push(row); row = []; }
+    else cur += ch;
+  }
+  row.push(cur); if (row.some(c => c.trim() !== '')) rows.push(row);
+  return rows;
+}
+function acParseClassSheet(rows){
+  let meta = null;
+  if (rows[0] && String(rows[0][0]).trim() === 'GJ-CLASS-SHEET'){ meta = { level: rows[0][1], cls: rows[0][2] }; rows = rows.slice(1); }
+  const head = (rows[0] || []).map(h => String(h || '').trim()), up = head.map(h => h.toUpperCase());
+  const nameCol = Math.max(0, up.findIndex(h => /^(NAME|STUDENT|FULL NAME)/.test(h)));
+  const subj = {}, order = [];
+  head.forEach((h, i) => { const m = /^(.*?)\s*[|:\-–—]?\s*(CLASS|EXAM)\s*SCORE/i.exec(h); if (m && m[1].trim()){ const nm = m[1].trim().toUpperCase(); if (!subj[nm]){ subj[nm] = {}; order.push(nm); } subj[nm][/^CLASS/i.test(m[2]) ? 'c' : 'e'] = i; } });
+  if (!order.length) return { meta, parsed: parseAssessmentRows(rows.length && meta ? rows : rows) };
+  const col = lab => up.findIndex(h => h === lab || h.indexOf(lab) === 0);
+  const cC = col('CONDUCT'), cI = col('INTEREST'), cA = col('ATTENDANCE'), cR = col('ARREARS');
+  const students = [], bad = [];
+  rows.slice(1).forEach((r, ri) => {
+    const name = String(r[nameCol] || '').trim(); if (!name || /^TOTAL/i.test(name)) return;
+    const scores = {}; let any = false;
+    order.forEach(nm => { const a = numOrNull(String(r[subj[nm].c] === undefined ? '' : r[subj[nm].c]).replace(/,/g, '.')), b = numOrNull(String(r[subj[nm].e] === undefined ? '' : r[subj[nm].e]).replace(/,/g, '.')); if (a === null && b === null) return; if ((a !== null && (a < 0 || a > 100)) || (b !== null && (b < 0 || b > 100))) bad.push(name + ' · ' + nm); scores[nm] = { classScore: a || 0, examScore: b || 0 }; any = true; });
+    if (!any) return;
+    students.push({ name, scores, conduct: cC >= 0 ? String(r[cC] || '').trim() : '', interest: cI >= 0 ? String(r[cI] || '').trim() : '', attendance: cA >= 0 ? String(r[cA] || '').trim() : '', arrears: cR >= 0 ? numOrNull(r[cR]) : null });
+  });
+  return { meta, parsed: { subjects: order, students, bad } };
+}
+function acRunCsv(text){
+  const out = document.getElementById('ac-import-preview');
+  let res; try{ res = acParseClassSheet(acCsvRows(text)); }catch(e){ out.innerHTML = '<div class="gate-error">Could not read that CSV file.</div>'; return; }
+  const parsed = res.parsed;
+  if (!parsed || !parsed.students.length){ out.innerHTML = '<div class="gate-error">No marks were found. Make sure you typed at least one mark and saved the file as CSV. Children with no marks at all are skipped.</div>'; return; }
+  if (res.meta && res.meta.cls){ document.getElementById('ac-level').value = res.meta.level || document.getElementById('ac-level').value; document.getElementById('ac-class').value = res.meta.cls; }
+  window._acPendingParse = parsed;
+  acShowPreview(parsed, !!res.meta);
+  if (parsed.bad && parsed.bad.length) out.insertAdjacentHTML('afterbegin', '<div class="gate-error" style="margin-top:12px;">Check these marks, they are outside 0 to 100: ' + parsed.bad.slice(0, 8).map(escapeHtml).join('; ') + (parsed.bad.length > 8 ? '…' : '') + '</div>');
+}
+
 function populateAcClassDropdown(){
+  try{ acSheetFillSelect(); }catch(e){}
   const sel = document.getElementById('ac-card-class');
   const current = sel.value;
   const keys = Object.keys(DATA.academic.classes);
@@ -11583,7 +11733,7 @@ function gjIcon(name, size){ return '<svg viewBox="0 0 24 24" width="' + (size |
 const GJ_NAVIC = { teacherhome:['home','#f97316,#fb923c'], timetable:['clock','#06b6d4,#22d3ee'], planner:['book','#8b5cf6,#a78bfa'], dashboard:['home','#3b82f6,#60a5fa'], overview:['chart','#6366f1,#818cf8'], admission:['userplus','#10b981,#34d399'], students:['users','#0ea5e9,#38bdf8'],
   payments:['card','#22c55e,#4ade80'], admissionfees:['ticket','#f59e0b,#fbbf24'], feedingfees:['utensils','#ef4444,#f87171'], messages:['chat','#ec4899,#f472b6'], 'messages-p':['phone','#14b8a6,#2dd4bf'], attendance:['calendar','#8b5cf6,#c084fc'], teacherscores:['pen','#f97316,#fdba74'],
   assessments:['clipboard','#06b6d4,#67e8f9'], fees:['cash','#16a34a,#4ade80'], import:['upload','#0ea5e9,#7dd3fc'], backup:['backup','#64748b,#94a3b8'], academic:['trophy','#eab308,#fde047'], summary:['sheet','#6366f1,#a5b4fc'], idcards:['id','#f43f5e,#fb7185'],
-  teacheraccounts:['key','#a855f7,#c084fc'], staff:['briefcase','#14b8a6,#5eead4'], studentaccess:['shield','#0d9488,#2dd4bf'], settings:['cog','#475569,#94a3b8'] };
+  schoolanalytics:['chart','#0ea5e9,#6366f1'], departments:['users','#14b8a6,#22d3ee'], duty:['shield','#f97316,#fb923c'], teacheraccounts:['key','#a855f7,#c084fc'], staff:['briefcase','#14b8a6,#5eead4'], studentaccess:['shield','#0d9488,#2dd4bf'], settings:['cog','#475569,#94a3b8'] };
 function gjDecorateNav(){
   document.querySelectorAll('.nav-item[data-view]').forEach(b => {
     if (b.querySelector('.nav-ic')) return;
@@ -11606,7 +11756,7 @@ const GJ_ACC_OPEN = {};
 function gjFold(){
   const v = document.querySelector('.view.active'); if (!v) return;
   const id = v.id.replace('view-', '');
-  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages'].includes(id)) return;
+  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages', 'schoolanalytics', 'departments', 'duty'].includes(id)) return;
   const panels = [...v.querySelectorAll(':scope > .panel, :scope > div > .panel')].filter(p => p.firstElementChild && p.firstElementChild.tagName === 'H3');
   if (panels.length < 2) return;
   panels.forEach((p, i) => {
@@ -12017,7 +12167,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.11-a';
+const APP_VERSION = '2026.11.12-a';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -12305,6 +12455,7 @@ async function renderTeacherHome(){
   const hr = new Date().getHours();
   document.getElementById('th-title').textContent = (hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening') + ', ' + String(t.name).split(' ').slice(-1)[0];
   document.getElementById('th-sub').textContent = new Date().toLocaleDateString([], {weekday:'long', day:'numeric', month:'long', year:'numeric'}) + ' · ' + (DATA.academic.settings.term || '') + ' ' + (DATA.academic.settings.year || '');
+  try{ dutyTeacherNote(t); }catch(e){}
   const tile = (icon, title, body, btn, go) => '<div class="panel" style="margin:0;padding:16px 18px;display:flex;flex-direction:column;gap:8px;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:22px;">' + icon + '</span><h3 style="margin:0;">' + title + '</h3></div><div style="flex:1;">' + body + '</div><button class="btn btn-solid" onclick="showView(\'' + go + '\')">' + btn + '</button></div>';
   // attendance
   const cls = attendanceClassesForUser(), today = todayStr();
@@ -13189,8 +13340,8 @@ const ACCESS_GROUPS = [
   ['Home', [['dashboard','Dashboard'],['overview','Overview']]],
   ['Students', [['admission','New Admission'],['students','Students list'],['summary','Student Summary'],['import','Import Students'],['idcards','ID Cards'],['studentaccess','Student Access']]],
   ['Fees', [['payments','Payments'],['admissionfees','Admission Fee'],['feedingfees','Feeding Fee'],['fees','Fee Schedule']]],
-  ['Attendance & Exams', [['attendance','Attendance (all classes)'],['assessments','Homework & Tests'],['academic','Academic Records']]],
-  ['Employees', [['staff','Staff'],['teacheraccounts','Teacher Accounts'],['timetable','Timetable'],['planner','Lesson Planner']]],
+  ['Attendance & Exams', [['attendance','Attendance (all classes)'],['assessments','Homework & Tests'],['academic','Academic Records'],['schoolanalytics','School Analytics']]],
+  ['Employees', [['staff','Staff'],['teacheraccounts','Teacher Accounts'],['timetable','Timetable'],['departments','Departments'],['duty','Duty Roster'],['planner','Lesson Planner']]],
   ['Messages', [['messages-p','SMS & WhatsApp to parents']]],
   ['School', [['settings','Settings'],['backup','Backup & Restore']]]
 ];
@@ -13480,8 +13631,8 @@ async function stuInlineLogin(){
 const NAV_GROUPS = [
   { k:'students', t:'Students', ic:'users', c:'#0ea5e9,#38bdf8', v:['admission','students','summary','import','idcards','studentaccess'] },
   { k:'fees', t:'Fees', ic:'cash', c:'#22c55e,#4ade80', v:['payments','admissionfees','feedingfees','fees'] },
-  { k:'exams', t:'Exams & Records', ic:'trophy', c:'#eab308,#fde047', v:['teacherscores','assessments','academic'] },
-  { k:'emp', t:'Employees', ic:'briefcase', c:'#14b8a6,#5eead4', v:['staff','teacheraccounts','timetable','planner'] },
+  { k:'exams', t:'Exams & Records', ic:'trophy', c:'#eab308,#fde047', v:['teacherscores','assessments','academic','schoolanalytics'] },
+  { k:'emp', t:'Employees', ic:'briefcase', c:'#14b8a6,#5eead4', v:['staff','teacheraccounts','timetable','departments','duty','planner'] },
   { k:'msg', t:'Messages', ic:'chat', c:'#ec4899,#f472b6', v:['messages','messages-p'] },
   { k:'school', t:'School', ic:'cog', c:'#475569,#94a3b8', v:['settings','backup'] }
 ];
@@ -13644,5 +13795,347 @@ function acCsv(which){
 }
 
 </script>
+<script id="gj-school-js">
+/* ================================================================ GJ-SCHOOL: school & class analytics, departments, weekly duty roster */
+const AN2 = { scope: '__school', mode: 'mock', a: '', b: '', cur: null };
+const AN2C = { up:'#2e9e5b', down:'#d64545', a:'#a1b8da', b:'#2f5fa8' };
+function an2Cap(w){ w = String(w || ''); return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }
+function an2Short(n){ const p = String(n || '').trim().split(/\s+/); return p.length < 2 ? an2Cap(p[0]) : an2Cap(p[0]) + ' ' + p[1].charAt(0).toUpperCase() + '.'; }
+function an2R(v){ return Math.round(v * 10) / 10; }
+function an2Mean(a){ a = a.filter(v => v !== null && v !== undefined && !isNaN(v)); return a.length ? an2R(a.reduce((x, y) => x + y, 0) / a.length) : null; }
+function an2Sgn(v){ return (v > 0 ? '+' : '') + v; }
+function an2Term(sc){ return sc && (+sc.classScore || +sc.examScore) ? Math.round(((+sc.classScore || 0) + (+sc.examScore || 0)) * 10) / 10 : null; }
+function an2ClassOrder(){ const o = []; try{ Object.keys(TEACHER_SETUP_CLASSES_BY_LEVEL).forEach(l => TEACHER_SETUP_CLASSES_BY_LEVEL[l].forEach(c => o.push(c))); }catch(e){} return o; }
+function an2Classes(){
+  const ord = an2ClassOrder(), ac = (DATA.academic && DATA.academic.classes) || {};
+  return Object.keys(ac).map(k => ({ key: k, c: ac[k], label: ac[k].class || k })).filter(x => x.c && (x.c.students || []).length)
+    .sort((a, b) => { const ia = ord.indexOf(a.label), ib = ord.indexOf(b.label); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+}
+/* one comparison = { aLabel, bLabel, subjects, studs:[{name, cls, A:{sub:val}, B:{sub:val}, aggA, aggB}] } */
+function an2MockSet(item, mA, mB){
+  const c = item.c, studs = (c.students || []).map(s => {
+    const A = {}, B = {};
+    (c.subjects || []).forEach(sub => { const a = mockScoreOf(s, sub, mA.id), b = mockScoreOf(s, sub, mB.id); if (a !== null) A[sub] = a; if (b !== null) B[sub] = b; });
+    const ra = mockResult(c, s, mA.id), rb = mockResult(c, s, mB.id);
+    return { name: s.name, cls: item.label, A, B, aggA: ra.rows.length ? ra.aggregate : null, aggB: rb.rows.length ? rb.aggregate : null };
+  });
+  return { aLabel: mA.name, bLabel: mB.name, subjects: (c.subjects || []).slice(), studs, hasAgg: true };
+}
+function an2TermSet(item){
+  const c = item.c, hist = (c.termHistory || []).slice(-1)[0]; if (!hist) return null;
+  const key = s => s.studentId || String(s.name || '').toUpperCase();
+  const prev = {}; (hist.students || []).forEach(s => { prev[key(s)] = s; });
+  const subs = (c.subjects || []).slice(); (hist.subjects || []).forEach(x => { if (subs.indexOf(x) < 0) subs.push(x); });
+  const studs = [];
+  (c.students || []).forEach(s => {
+    const p = prev[key(s)]; if (!p) return;
+    const A = {}, B = {};
+    subs.forEach(sub => { const a = an2Term(p.scores && p.scores[sub]), b = an2Term(s.scores && s.scores[sub]); if (a !== null) A[sub] = a; if (b !== null) B[sub] = b; });
+    studs.push({ name: s.name, cls: item.label, A, B, aggA: null, aggB: null });
+  });
+  const lab = (t, y) => ((t || '') + ' ' + (y || '')).trim();
+  return { aLabel: lab(hist.term, hist.year) || 'Last term', bLabel: lab(c.termLabel && c.termLabel.term, c.termLabel && c.termLabel.year) || 'This term', subjects: subs, studs, hasAgg: false };
+}
+function an2Compute(ds){
+  const subj = ds.subjects.map(sub => {
+    let n = 0, sa = 0, sb = 0, imp = 0, dec = 0;
+    ds.studs.forEach(s => { const a = s.A[sub], b = s.B[sub]; if (a === undefined || b === undefined) return; n++; sa += a; sb += b; if (b > a) imp++; else if (b < a) dec++; });
+    return { name: sub, n, a: n ? an2R(sa / n) : null, b: n ? an2R(sb / n) : null, change: n ? an2R((sb - sa) / n) : null, imp, dec };
+  }).filter(r => r.n > 0);
+  const stu = [], cells = [];
+  ds.studs.forEach(s => {
+    let m = 0, sa = 0, sb = 0; const row = {};
+    ds.subjects.forEach(sub => { const a = s.A[sub], b = s.B[sub]; if (a !== undefined && b !== undefined){ m++; sa += a; sb += b; row[sub] = an2R(b - a); } else row[sub] = null; });
+    if (!m) return;
+    stu.push({ name: s.name, cls: s.cls, matched: m, a: an2R(sa / m), b: an2R(sb / m), change: an2R((sb - sa) / m), aggA: s.aggA, aggB: s.aggB, aggChange: (s.aggA !== null && s.aggB !== null) ? s.aggB - s.aggA : null });
+    cells.push(row);
+  });
+  return { subj, stu, cells };
+}
+/* ---------- svg helpers ---------- */
+function an2Svg(w, h, inner, label){ return '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;display:block;" role="img" aria-label="' + escapeHtml(label) + '">' + inner + '</svg>'; }
+function an2Diverge(rows, label){
+  if (!rows.length) return '';
+  const W = 640, rh = 20, L = 96, R = 40, T = 8, H = T + rows.length * rh + 22;
+  const mn = Math.min(0, ...rows.map(r => r.change)) - 1, mx = Math.max(0, ...rows.map(r => r.change)) + 1;
+  const x = v => L + (v - mn) / (mx - mn) * (W - L - R);
+  let g = '<line x1="' + x(0) + '" x2="' + x(0) + '" y1="' + T + '" y2="' + (H - 18) + '" stroke="var(--text-dim)"/>';
+  rows.forEach((r, i) => {
+    const y = T + i * rh, x0 = x(0), x1 = x(r.change), up = r.change >= 0, col = up ? AN2C.up : AN2C.down;
+    g += '<text x="' + (L - 6) + '" y="' + (y + 14) + '" text-anchor="end" font-size="11.5" fill="var(--text)">' + escapeHtml(r.label || an2Short(r.name)) + '</text>'
+      + '<rect x="' + Math.min(x0, x1) + '" y="' + (y + 2) + '" width="' + Math.max(1, Math.abs(x1 - x0)) + '" height="' + (rh - 5) + '" rx="2" fill="' + col + '"/>'
+      + '<text x="' + (up ? x1 + 5 : x1 - 5) + '" y="' + (y + 14) + '" text-anchor="' + (up ? 'start' : 'end') + '" font-size="11" font-weight="700" fill="' + col + '">' + (up ? '▲ ' : '▼ ') + an2Sgn(r.change) + '</text>';
+  });
+  g += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="11" fill="var(--text-dim)">' + escapeHtml(label) + '</text>';
+  return an2Svg(W, H, g, label);
+}
+function an2Groups(rows, aName, bName, o){
+  o = o || {};
+  if (!rows.length) return '';
+  const W = 640, H = 230, L = 34, R = 8, T = 22, B = 46, n = rows.length;
+  const top = Math.max(10, Math.ceil(Math.max(...rows.map(r => Math.max(r.a || 0, r.b || 0))) / 10) * 10);
+  const y = v => T + (H - T - B) * (1 - v / top), cw = (W - L - R) / n, bw = Math.min(26, cw * 0.36);
+  let g = '';
+  for (let v = 0; v <= top; v += top / 4) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (L - 5) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="10.5" fill="var(--text-dim)">' + Math.round(v) + '</text>';
+  rows.forEach((r, i) => {
+    const cx = L + cw * i + cw / 2, ch = r.change, col = ch >= 0 ? AN2C.up : AN2C.down;
+    g += '<rect x="' + (cx - bw) + '" y="' + y(r.a) + '" width="' + bw + '" height="' + (y(0) - y(r.a)) + '" fill="' + AN2C.a + '" rx="2"><title>' + escapeHtml(aName) + ': ' + r.a + '</title></rect>'
+      + '<rect x="' + cx + '" y="' + y(r.b) + '" width="' + bw + '" height="' + (y(0) - y(r.b)) + '" fill="' + AN2C.b + '" rx="2"><title>' + escapeHtml(bName) + ': ' + r.b + '</title></rect>'
+      + '<text x="' + cx + '" y="' + (y(Math.max(r.a, r.b)) - 5) + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="' + col + '">' + (ch >= 0 ? '▲' : '▼') + an2Sgn(ch) + '</text>'
+      + '<text x="' + cx + '" y="' + (H - B + 14) + '" text-anchor="end" font-size="10.5" fill="var(--text)" transform="rotate(-28 ' + cx + ' ' + (H - B + 14) + ')">' + escapeHtml(r.label || r.name) + '</text>';
+  });
+  return an2Svg(W, H, g, 'Comparison chart') + '<div class="ana-leg"><span><i style="background:' + AN2C.a + ';"></i>' + escapeHtml(aName) + '</span><span><i style="background:' + AN2C.b + ';"></i>' + escapeHtml(bName) + '</span>' + (o.note ? '<span style="margin-left:auto;">' + o.note + '</span>' : '') + '</div>';
+}
+function an2AggChart(stu, aName, bName){
+  const rows = stu.filter(s => s.aggA !== null && s.aggB !== null).sort((a, b) => a.aggB - b.aggB || a.aggA - b.aggA);
+  if (!rows.length) return '';
+  const W = 640, H = 230, L = 34, R = 8, T = 14, B = 52, n = rows.length, top = 54;
+  const y = v => T + (H - T - B) * (1 - v / top), cw = (W - L - R) / n, bw = Math.min(14, cw * 0.4);
+  let g = '';
+  [0, 18, 36, 54].forEach(v => { g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (L - 5) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="10.5" fill="var(--text-dim)">' + v + '</text>'; });
+  rows.forEach((s, i) => { const cx = L + cw * i + cw / 2;
+    g += '<rect x="' + (cx - bw) + '" y="' + y(s.aggA) + '" width="' + bw + '" height="' + (y(0) - y(s.aggA)) + '" fill="' + AN2C.a + '"><title>' + escapeHtml(s.name) + ' · ' + escapeHtml(aName) + ': ' + s.aggA + '</title></rect>'
+      + '<rect x="' + cx + '" y="' + y(s.aggB) + '" width="' + bw + '" height="' + (y(0) - y(s.aggB)) + '" fill="' + AN2C.b + '"><title>' + escapeHtml(s.name) + ' · ' + escapeHtml(bName) + ': ' + s.aggB + '</title></rect>'
+      + '<text x="' + cx + '" y="' + (H - B + 12) + '" text-anchor="end" font-size="10" fill="var(--text)" transform="rotate(-55 ' + cx + ' ' + (H - B + 12) + ')">' + escapeHtml(an2Short(s.name)) + '</text>'; });
+  return an2Svg(W, H, g, 'Aggregate by student') + '<div class="ana-leg"><span><i style="background:' + AN2C.a + ';"></i>' + escapeHtml(aName) + '</span><span><i style="background:' + AN2C.b + ';"></i>' + escapeHtml(bName) + '</span><span style="margin-left:auto;">Lower is better</span></div>';
+}
+function an2Scatter(stu, aName, bName){
+  if (!stu.length) return '';
+  const S = 380, P = 40, all = stu.map(s => s.a).concat(stu.map(s => s.b)), lo = Math.floor(Math.min(...all) / 10) * 10, hi = Math.ceil(Math.max(...all) / 10) * 10 + 5;
+  const px = v => P + (v - lo) / (hi - lo) * (S - P - 12), py = v => S - P - (v - lo) / (hi - lo) * (S - P - 12);
+  let g = '<rect x="' + P + '" y="12" width="' + (S - P - 12) + '" height="' + (S - P - 12) + '" fill="none" stroke="var(--line)"/><line x1="' + px(lo) + '" y1="' + py(lo) + '" x2="' + px(hi) + '" y2="' + py(hi) + '" stroke="var(--text-dim)" stroke-dasharray="4 4"/>';
+  for (let v = lo; v <= hi; v += 10) g += '<text x="' + px(v) + '" y="' + (S - P + 14) + '" text-anchor="middle" font-size="10" fill="var(--text-dim)">' + v + '</text><text x="' + (P - 5) + '" y="' + (py(v) + 3) + '" text-anchor="end" font-size="10" fill="var(--text-dim)">' + v + '</text>';
+  stu.forEach(s => { const up = s.change >= 0, col = up ? AN2C.up : AN2C.down; g += '<circle cx="' + px(s.a) + '" cy="' + py(s.b) + '" r="5" fill="' + col + '"><title>' + escapeHtml(s.name) + ': ' + s.a + ' → ' + s.b + '</title></circle><text x="' + (px(s.a) + 7) + '" y="' + (py(s.b) - 5) + '" font-size="8.5" fill="var(--text)">' + escapeHtml(an2Short(s.name)) + '</text>'; });
+  g += '<text x="' + ((P + S) / 2) + '" y="' + (S - 4) + '" text-anchor="middle" font-size="11" fill="var(--text-dim)">' + escapeHtml(aName) + ' average</text><text transform="rotate(-90 12 ' + (S / 2) + ')" x="12" y="' + (S / 2) + '" text-anchor="middle" font-size="11" fill="var(--text-dim)">' + escapeHtml(bName) + ' average</text>';
+  return an2Svg(S, S, g, 'Scatter: above the line = improved');
+}
+function an2Heat(ds, cp){
+  const subs = cp.subj.map(r => r.name);
+  const head = '<tr><th style="text-align:left;">Student</th>' + subs.map(s => '<th style="font-size:11px;">' + escapeHtml(s.length > 11 ? (typeof ttSubjShort === 'function' ? ttSubjShort(s) : s.slice(0, 10)) : s) + '</th>').join('') + '</tr>';
+  const body = cp.stu.map((s, i) => '<tr><td style="white-space:nowrap;">' + escapeHtml(an2Short(s.name)) + '</td>' + subs.map(sub => { const v = cp.cells[i][sub]; if (v === null || v === undefined) return '<td style="text-align:center;color:var(--text-dim);">–</td>'; const al = Math.min(1, Math.abs(v) / 30) * 0.8, rgb = v >= 0 ? '46,158,91' : '214,69,69'; return '<td style="text-align:center;font-weight:600;background:rgba(' + rgb + ',' + al.toFixed(2) + ');color:' + (al > 0.55 ? '#fff' : 'var(--text)') + ';">' + (v > 0 ? '+' : '') + v + '</td>'; }).join('') + '</tr>').join('');
+  return '<div style="overflow:auto;"><table style="font-size:12.5px;"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+}
+function an2Line(labels, vals, name){
+  const pts = vals.map((v, i) => ({ v, i })).filter(p => p.v !== null);
+  if (pts.length < 2) return '';
+  const W = 640, H = 150, L = 34, R = 14, T = 16, B = 26, n = labels.length, lo = Math.floor(Math.min(...pts.map(p => p.v)) / 10) * 10, hi = Math.ceil(Math.max(...pts.map(p => p.v)) / 10) * 10 + 5;
+  const x = i => L + i * (W - L - R) / Math.max(1, n - 1), y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  let g = [lo, (lo + hi) / 2, hi].map(v => '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (L - 5) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="10.5" fill="var(--text-dim)">' + Math.round(v) + '</text>').join('');
+  g += '<path d="' + pts.map((p, k) => (k ? 'L' : 'M') + x(p.i) + ' ' + y(p.v)).join(' ') + '" fill="none" stroke="' + AN2C.b + '" stroke-width="2.5" stroke-linejoin="round"/>';
+  pts.forEach(p => { g += '<circle cx="' + x(p.i) + '" cy="' + y(p.v) + '" r="4" fill="#fff" stroke="' + AN2C.b + '" stroke-width="2"/><text x="' + x(p.i) + '" y="' + (y(p.v) - 9) + '" text-anchor="middle" font-size="11" font-weight="700" fill="' + AN2C.b + '">' + p.v + '</text>'; });
+  labels.forEach((l, i) => { g += '<text x="' + x(i) + '" y="' + (H - 7) + '" text-anchor="' + (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') + '" font-size="10.5" fill="var(--text)">' + escapeHtml(l) + '</text>'; });
+  return '<h4 style="margin:14px 0 4px;">' + escapeHtml(name) + '</h4>' + an2Svg(W, H, g, name);
+}
+/* ---------- plain-words insights ---------- */
+function an2Insights(ds, cp, scopeLabel){
+  const out = [], N = cp.stu.length; if (!N) return out;
+  const up = cp.stu.filter(s => s.change > 0), dn = cp.stu.filter(s => s.change < 0);
+  out.push('<b>' + up.length + ' of ' + N + '</b> students picked up their average from ' + escapeHtml(ds.aLabel) + ' to ' + escapeHtml(ds.bLabel) + (dn.length ? '; <b>' + dn.length + '</b> dropped (' + dn.map(s => escapeHtml(an2Short(s.name))).join(', ') + ').' : '. Nobody dropped.'));
+  if (ds.hasAgg){
+    const ag = cp.stu.filter(s => s.aggChange !== null), better = ag.filter(s => s.aggChange < 0), worse = ag.filter(s => s.aggChange > 0);
+    if (ag.length) out.push('Aggregate (lower is better): <b>' + better.length + '</b> improved, <b>' + worse.length + '</b> got worse' + (worse.length ? ' (' + worse.map(s => escapeHtml(an2Short(s.name)) + ' +' + s.aggChange).join(', ') + ')' : '') + '.');
+    const mism = cp.stu.filter(s => s.aggChange !== null && ((s.change < 0 && s.aggChange < 0) || (s.change > 0 && s.aggChange > 0)));
+    if (mism.length) out.push('Average and aggregate disagree for ' + mism.map(s => escapeHtml(an2Short(s.name))).join(', ') + ': check how many subjects they matched.');
+  }
+  const bs = cp.subj.slice().sort((a, b) => b.change - a.change), best = bs[0], worst = bs[bs.length - 1];
+  if (best && best.change > 0) out.push('Biggest gain: <b>' + escapeHtml(best.name) + '</b> (' + an2Sgn(best.change) + ', ' + best.imp + ' of ' + best.n + ' students up).');
+  if (worst && worst.change < 0) out.push('Biggest drop: <b>' + escapeHtml(worst.name) + '</b> (' + an2Sgn(worst.change) + ', ' + worst.dec + ' of ' + worst.n + ' students down). Worth a lesson review.');
+  const low = cp.subj.slice().sort((a, b) => a.b - b.b)[0]; if (low) out.push('Lowest class average now: <b>' + escapeHtml(low.name) + '</b> (' + low.b + ').');
+  const split = [];
+  cp.subj.forEach(r => { const ds2 = cp.cells.map(c => c[r.name]).filter(v => v !== null && v !== undefined); if (ds2.length > 5){ const m = ds2.reduce((a, b) => a + b, 0) / ds2.length, sd = Math.sqrt(ds2.reduce((a, b) => a + (b - m) * (b - m), 0) / ds2.length); if (sd > 15 && Math.abs(m) < 6) split.push(r.name); } });
+  if (split.length) out.push('<b>' + split.map(escapeHtml).join(', ') + '</b>: the class average barely moved but individual students moved a lot both ways. Check that paper and the marking.');
+  const few = cp.stu.filter(s => s.matched <= 3); if (few.length) out.push('Not enough matched subjects to trust: ' + few.map(s => escapeHtml(an2Short(s.name)) + ' (' + s.matched + ')').join(', ') + '.');
+  return out;
+}
+function an2Download(name, rows){
+  const csv = rows.map(r => r.map(v => { v = v === null || v === undefined ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function an2Csv(kind){
+  const cp = AN2.cur; if (!cp) return;
+  if (kind === 'subj') an2Download('subject_comparison.csv', [['', 'A_avg', 'B_avg', 'n', 'change', 'improved', 'declined']].concat(cp.subj.map(r => [r.name, r.a, r.b, r.n, r.change, r.imp, r.dec])));
+  else an2Download('student_comparison.csv', [['', 'class', 'matched_subjects', 'avg_A', 'avg_B', 'change', 'agg_A', 'agg_B', 'agg_change']].concat(cp.stu.map(s => [s.name, s.cls, s.matched, s.a, s.b, s.change, s.aggA, s.aggB, s.aggChange])));
+}
+/* ---------- the page ---------- */
+function an2Set(k, v){ AN2[k] = v; if (k === 'scope' && v !== '__school'){ const it = an2Classes().find(x => x.key === v); AN2.mode = it && isMockClassData(it.c) && mockListSorted().length >= 2 ? 'mock' : 'term'; AN2.a = ''; AN2.b = ''; } renderSchoolAnalytics(); }
+function renderSchoolAnalytics(){
+  const root = document.getElementById('an2-root'); if (!root) return;
+  const items = an2Classes(), mocks = mockListSorted();
+  if (!items.length){ root.innerHTML = '<div class="panel"><div class="empty-state">No class results yet. Import or enter scores under Academic Records first.</div></div>'; return; }
+  if (AN2.scope !== '__school' && !items.some(x => x.key === AN2.scope)) AN2.scope = '__school';
+  const item = AN2.scope === '__school' ? null : items.find(x => x.key === AN2.scope);
+  const canMock = !!item && isMockClassData(item.c) && mocks.length >= 2;
+  if (!canMock && AN2.mode === 'mock') AN2.mode = 'term';
+  let ctl = '<div class="panel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;"><div class="field" style="margin:0;"><label>Show</label><select onchange="an2Set(\'scope\',this.value)"><option value="__school">Whole school</option>' + items.map(x => '<option value="' + escapeHtml(x.key) + '"' + (x.key === AN2.scope ? ' selected' : '') + '>' + escapeHtml(x.label) + '</option>').join('') + '</select></div>';
+  if (canMock){
+    const aId = AN2.a && mocks.some(m => m.id === AN2.a) ? AN2.a : mocks[Math.max(0, mocks.length - 2)].id, bId = AN2.b && mocks.some(m => m.id === AN2.b) ? AN2.b : mocks[mocks.length - 1].id;
+    AN2.a = aId; AN2.b = bId;
+    const opt = sel => mocks.map(m => '<option value="' + m.id + '"' + (m.id === sel ? ' selected' : '') + '>' + escapeHtml(m.name) + '</option>').join('');
+    ctl += '<div class="field" style="margin:0;"><label>Compare</label><select onchange="an2Set(\'mode\',this.value)"><option value="mock"' + (AN2.mode === 'mock' ? ' selected' : '') + '>Mock against mock</option><option value="term"' + (AN2.mode === 'term' ? ' selected' : '') + '>This term against last term</option></select></div>';
+    if (AN2.mode === 'mock') ctl += '<div class="field" style="margin:0;"><label>From</label><select onchange="an2Set(\'a\',this.value)">' + opt(aId) + '</select></div><div class="field" style="margin:0;"><label>To</label><select onchange="an2Set(\'b\',this.value)">' + opt(bId) + '</select></div>';
+  }
+  ctl += '<span class="hint" style="margin:0 0 6px;">Mocks are arranged by month automatically.</span></div>';
+  if (!item){ root.innerHTML = ctl + an2SchoolBody(items); return; }
+  let ds;
+  if (AN2.mode === 'mock'){ const mA = mocks.find(m => m.id === AN2.a), mB = mocks.find(m => m.id === AN2.b); ds = an2MockSet(item, mA, mB); }
+  else ds = an2TermSet(item);
+  if (!ds){ root.innerHTML = ctl + '<div class="panel"><div class="empty-state">There is no earlier term saved for ' + escapeHtml(item.label) + ' yet, so there is nothing to compare. After you close a term, its results are kept and this page will compare them.</div></div>'; return; }
+  const cp = AN2.cur = an2Compute(ds);
+  if (!cp.stu.length){ root.innerHTML = ctl + '<div class="panel"><div class="empty-state">No student has a score in both ' + escapeHtml(ds.aLabel) + ' and ' + escapeHtml(ds.bLabel) + '.</div></div>'; return; }
+  const ins = an2Insights(ds, cp, item.label), sorted = cp.stu.slice().sort((a, b) => b.change - a.change);
+  let h = ctl + '<div class="panel"><h3 style="margin-top:0;">' + escapeHtml(item.label) + ': ' + escapeHtml(ds.aLabel) + ' → ' + escapeHtml(ds.bLabel) + '</h3><ul style="margin:6px 0 0 18px;line-height:1.7;">' + ins.map(t => '<li>' + t + '</li>').join('') + '</ul>'
+    + '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-sm" onclick="an2Csv(\'subj\')">Download subjects (CSV)</button><button class="btn btn-sm" onclick="an2Csv(\'stu\')">Download students (CSV)</button><button class="btn btn-sm" onclick="window.print()">Print</button></div></div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Class average by subject</h3>' + an2Groups(cp.subj.map(r => Object.assign({ label: (typeof ttSubjShort === 'function' ? ttSubjShort(r.name) : r.name) }, r)), ds.aLabel, ds.bLabel) + '</div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Student progress</h3>' + an2Diverge(sorted, 'Change in average score per subject (matched subjects only)') + '</div>';
+  if (ds.hasAgg) h += '<div class="panel"><h3 style="margin-top:0;">Aggregate by student</h3>' + an2AggChart(cp.stu, ds.aLabel, ds.bLabel) + '</div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Score change per student per subject</h3>' + an2Heat(ds, cp) + '<p class="hint">A dash means there is no comparable score in one of the two.</p></div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Above the line = improved</h3><div style="max-width:430px;margin:auto;">' + an2Scatter(cp.stu, ds.aLabel, ds.bLabel) + '</div></div>';
+  if (AN2.mode === 'mock' && canMock){
+    const c = item.c, labs = mocks.map(m => m.name.replace(/\s*20\d\d\s*$/, '')), vals = mocks.map(m => { const a = []; (c.students || []).forEach(s => { const r = mockResult(c, s, m.id); if (r.rows.length){ const sc = r.rows.filter(x => x.score !== null); if (sc.length) a.push(sc.reduce((x, y) => x + y.score, 0) / sc.length); } }); return an2Mean(a); });
+    h += '<div class="panel">' + an2Line(labs, vals, 'Class average across every mock, month by month') + '</div>';
+  }
+  const rowsS = cp.subj.map(r => '<tr><td>' + escapeHtml(r.name) + '</td><td class="num-cell">' + r.a + '</td><td class="num-cell">' + r.b + '</td><td class="num-cell">' + r.n + '</td><td class="num-cell" style="font-weight:700;color:' + (r.change >= 0 ? AN2C.up : AN2C.down) + ';">' + (r.change >= 0 ? '▲ ' : '▼ ') + an2Sgn(r.change) + '</td><td class="num-cell">' + r.imp + '</td><td class="num-cell">' + r.dec + '</td></tr>').join('');
+  h += '<details class="panel"><summary style="cursor:pointer;font-weight:700;">Subject table</summary><table style="margin-top:8px;"><thead><tr><th>Subject</th><th>' + escapeHtml(ds.aLabel) + '</th><th>' + escapeHtml(ds.bLabel) + '</th><th>Students</th><th>Change</th><th>Up</th><th>Down</th></tr></thead><tbody>' + rowsS + '</tbody></table></details>';
+  root.innerHTML = h;
+}
+function an2SchoolBody(items){
+  const per = [], combined = { aLabel: 'Last term', bLabel: 'This term', subjects: [], studs: [], hasAgg: false };
+  items.forEach(it => {
+    const ds = an2TermSet(it); const cur = an2Mean((it.c.students || []).map(s => an2Mean((it.c.subjects || []).map(sub => an2Term(s.scores && s.scores[sub])))));
+    if (!ds){ per.push({ label: it.label, key: it.key, n: (it.c.students || []).length, cur, prev: null, change: null, up: 0, dn: 0 }); return; }
+    const cp = an2Compute(ds); ds.subjects.forEach(x => { const u = String(x).toUpperCase(); if (combined.subjects.indexOf(u) < 0) combined.subjects.push(u); });
+    ds.studs.forEach(s => { const A = {}, B = {}; Object.keys(s.A).forEach(k => A[k.toUpperCase()] = s.A[k]); Object.keys(s.B).forEach(k => B[k.toUpperCase()] = s.B[k]); combined.studs.push({ name: s.name, cls: it.label, A, B, aggA: null, aggB: null }); });
+    per.push({ label: it.label, key: it.key, n: (it.c.students || []).length, cur, prev: an2Mean(cp.stu.map(s => s.a)), curM: an2Mean(cp.stu.map(s => s.b)), change: an2Mean(cp.stu.map(s => s.change)), up: cp.stu.filter(s => s.change > 0).length, dn: cp.stu.filter(s => s.change < 0).length });
+  });
+  const total = per.reduce((a, p) => a + p.n, 0), withH = per.filter(p => p.change !== null);
+  let h = '<div class="panel"><h3 style="margin-top:0;">Whole school: ' + total + ' students in ' + items.length + ' classes</h3>';
+  const best = per.filter(p => p.cur !== null).sort((a, b) => b.cur - a.cur);
+  if (best.length) h += '<ul style="margin:6px 0 0 18px;line-height:1.7;"><li>Highest class average this term: <b>' + escapeHtml(best[0].label) + '</b> (' + best[0].cur + '). Lowest: <b>' + escapeHtml(best[best.length - 1].label) + '</b> (' + best[best.length - 1].cur + ').</li>'
+    + (withH.length ? '<li>Most improved class: <b>' + escapeHtml(withH.slice().sort((a, b) => b.change - a.change)[0].label) + '</b> (' + an2Sgn(withH.slice().sort((a, b) => b.change - a.change)[0].change) + '). Most slipping: <b>' + escapeHtml(withH.slice().sort((a, b) => a.change - b.change)[0].label) + '</b> (' + an2Sgn(withH.slice().sort((a, b) => a.change - b.change)[0].change) + ').</li>' : '<li>No earlier term is saved yet, so the change columns will fill in after you close a term.</li>') + '</ul>';
+  h += '</div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Class averages this term</h3>' + an2Groups(per.filter(p => p.cur !== null).map(p => ({ label: p.label, a: p.prev !== null && p.prev !== undefined ? p.prev : p.cur, b: p.cur, change: p.change !== null ? p.change : 0 })), 'Last term', 'This term', { note: 'classes with no earlier term show no change' }) + '</div>';
+  h += '<div class="panel"><h3 style="margin-top:0;">Class by class</h3><table><thead><tr><th>Class</th><th>Students</th><th>Average now</th><th>Change</th><th>Up</th><th>Down</th><th></th></tr></thead><tbody>' + per.map(p => '<tr><td><strong>' + escapeHtml(p.label) + '</strong></td><td class="num-cell">' + p.n + '</td><td class="num-cell">' + (p.cur === null ? '—' : p.cur) + '</td><td class="num-cell" style="font-weight:700;color:' + (p.change === null ? 'inherit' : p.change >= 0 ? AN2C.up : AN2C.down) + ';">' + (p.change === null ? '—' : (p.change >= 0 ? '▲ ' : '▼ ') + an2Sgn(p.change)) + '</td><td class="num-cell">' + (p.change === null ? '' : p.up) + '</td><td class="num-cell">' + (p.change === null ? '' : p.dn) + '</td><td><button class="btn btn-sm" onclick="an2Set(\'scope\',\'' + escapeHtml(p.key) + '\')">Open</button></td></tr>').join('') + '</tbody></table></div>';
+  if (combined.studs.length){
+    const cp = AN2.cur = an2Compute(combined);
+    h += '<div class="panel"><h3 style="margin-top:0;">School average by subject</h3>' + an2Groups(cp.subj.map(r => Object.assign({ label: (typeof ttSubjShort === 'function' ? ttSubjShort(r.name) : r.name) }, r)), 'Last term', 'This term') + '</div>';
+    const s2 = cp.stu.slice().sort((a, b) => b.change - a.change), pick = s2.slice(0, 8).concat(s2.slice(-8).filter(x => s2.slice(0, 8).indexOf(x) < 0)).map(s => Object.assign({ label: an2Short(s.name) + ' (' + s.cls + ')' }, s));
+    h += '<div class="panel"><h3 style="margin-top:0;">Biggest risers and fallers across the school</h3>' + an2Diverge(pick, 'Change in average score per subject') + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-sm" onclick="an2Csv(\'subj\')">Download subjects (CSV)</button><button class="btn btn-sm" onclick="an2Csv(\'stu\')">Download students (CSV)</button></div></div>';
+  }
+  return h;
+}
+
+/* ================================================================ DEPARTMENTS */
+const DEPTS = [ { id:'pre', name:'Pre-school', re:/^(creche|nursery|kg)/i }, { id:'pri', name:'Primary', re:/^primary/i }, { id:'jhs', name:'JHS', re:/^jhs/i } ];
+function deptCfg(id){ DATA.departments = DATA.departments || {}; return DATA.departments[id] = DATA.departments[id] || { add: [], remove: [], head: '' }; }
+function deptPeople(){ return (DATA.teachers || []).filter(t => !isProprietorRec(t)); }
+function deptAllocClass(a){ let c = String(a.class || ''); try{ c = canonicalizeClassName(c) || c; }catch(e){} return c; }
+function deptAuto(id){
+  const d = DEPTS.find(x => x.id === id); if (!d) return [];
+  return deptPeople().filter(t => (t.allocations || []).some(a => a.class && a.class !== '*' && d.re.test(deptAllocClass(a))));
+}
+function deptMembers(id){
+  if (id === 'duty'){ const w = dutyWeek(dutyMonday(new Date())); return w ? [w.tM, w.tF].map(x => (DATA.teachers || []).find(t => t.id === x)).filter(Boolean) : []; }
+  const cfg = (DATA.departments && DATA.departments[id]) || { add: [], remove: [] }, auto = deptAuto(id);
+  const ids = auto.map(t => t.id).filter(x => (cfg.remove || []).indexOf(x) < 0).concat((cfg.add || []).filter(x => auto.every(t => t.id !== x)));
+  return ids.map(x => (DATA.teachers || []).find(t => t.id === x)).filter(Boolean);
+}
+function deptTeaches(t, id){
+  const d = DEPTS.find(x => x.id === id), by = {};
+  (t.allocations || []).forEach(a => { if (!a.class || a.class === '*') return; const c = deptAllocClass(a); if (!d.re.test(c)) return; (by[c] = by[c] || []).push(a.subject === '*' ? 'Class teacher' : a.subject); });
+  return Object.keys(by).map(c => c + ': ' + by[c].join(', ')).join(' · ');
+}
+function renderDepartments(){
+  const root = document.getElementById('dp-root'); if (!root) return;
+  const people = deptPeople();
+  if (!people.length){ root.innerHTML = '<div class="panel"><div class="empty-state">Add teachers and their classes under Teacher Accounts first.</div></div>'; return; }
+  root.innerHTML = '<p class="hint" style="margin-top:0;">Teachers are placed in a department automatically from the classes and subjects given to them (the same information the timetable uses). You can add or remove anyone by hand, and pick a head.</p>'
+    + DEPTS.map(d => {
+      const cfg = deptCfg(d.id), mem = deptMembers(d.id), others = people.filter(t => mem.every(m => m.id !== t.id));
+      return '<div class="panel"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;"><h3 style="margin:0;">' + escapeHtml(d.name) + ' department <span class="status-badge">' + mem.length + (mem.length === 1 ? ' teacher' : ' teachers') + '</span></h3><button class="btn btn-primary btn-sm" onclick="deptMessage(\'' + d.id + '\')">Message this department</button></div>'
+        + (mem.length ? '<table style="margin-top:10px;"><thead><tr><th>Teacher</th><th>Teaches</th><th></th></tr></thead><tbody>' + mem.map(t => '<tr><td><strong>' + escapeHtml(t.name) + '</strong>' + (cfg.head === t.id ? ' <span class="status-badge status-paid">Head</span>' : '') + (t.gender ? ' <span class="hint" style="margin:0;">' + (t.gender === 'Male' ? '♂' : '♀') + '</span>' : '') + '</td><td>' + escapeHtml(deptTeaches(t, d.id) || ((cfg.add || []).indexOf(t.id) >= 0 ? 'Added by hand' : '')) + '</td><td><div class="row-actions"><button class="btn btn-sm" onclick="deptHead(\'' + d.id + '\',\'' + t.id + '\')">' + (cfg.head === t.id ? 'Remove head' : 'Make head') + '</button><button class="btn btn-sm" onclick="deptRemove(\'' + d.id + '\',\'' + t.id + '\')">Remove</button></div></td></tr>').join('') + '</tbody></table>' : '<div class="empty-state" style="padding:14px;">Nobody here yet.</div>')
+        + (others.length ? '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;"><select id="dp-add-' + d.id + '">' + others.map(t => '<option value="' + t.id + '">' + escapeHtml(t.name) + '</option>').join('') + '</select><button class="btn btn-sm" onclick="deptAdd(\'' + d.id + '\')">+ Add to ' + escapeHtml(d.name) + '</button></div>' : '') + '</div>';
+    }).join('');
+}
+function deptSave(){ markMetaDirty('departments'); saveData(); renderDepartments(); }
+function deptAdd(id){ const v = document.getElementById('dp-add-' + id).value, c = deptCfg(id); c.remove = (c.remove || []).filter(x => x !== v); if ((c.add || []).indexOf(v) < 0) c.add = (c.add || []).concat(v); deptSave(); }
+function deptRemove(id, tid){ const c = deptCfg(id); c.add = (c.add || []).filter(x => x !== tid); if ((c.remove || []).indexOf(tid) < 0) c.remove = (c.remove || []).concat(tid); if (c.head === tid) c.head = ''; deptSave(); }
+function deptHead(id, tid){ const c = deptCfg(id); c.head = c.head === tid ? '' : tid; deptSave(); }
+function deptMessage(id){ showView('messages'); setTimeout(() => { try{ msgPrefill('dept:' + id); }catch(e){} }, 80); }
+
+/* ================================================================ WEEKLY DUTY ROSTER */
+function dutyISO(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dutyMonday(d){ const t = new Date(d.getFullYear(), d.getMonth(), d.getDate()); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return dutyISO(t); }
+function dutyAdd(iso, days){ const t = new Date(iso + 'T00:00:00'); t.setDate(t.getDate() + days); return dutyISO(t); }
+function dutyWeeksBetween(a, b){ return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 604800000); }
+function dutyFmt(iso){ return new Date(iso + 'T00:00:00').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }); }
+function dutyR(){ return DATA.dutyRoster = DATA.dutyRoster || { seniorClass: 'JHS 2', exclude: [], weeks: [], anchor: '' }; }
+function dutyWeek(iso){ return (dutyR().weeks || []).find(w => w.start === iso) || null; }
+function dutyByName(a, b){ return String(a.name).localeCompare(String(b.name)); }
+function dutyTeacherPool(){ const ex = dutyR().exclude || [], T = deptPeople().filter(t => ex.indexOf(t.id) < 0); return { M: T.filter(t => t.gender === 'Male').sort(dutyByName), F: T.filter(t => t.gender === 'Female').sort(dutyByName), none: T.filter(t => t.gender !== 'Male' && t.gender !== 'Female') }; }
+function dutySeniorPool(){
+  const cls = dutyR().seniorClass || 'JHS 2', S = (DATA.students || []).filter(s => (s.status || 'active') === 'active' && classesEquivalent(s.class, cls));
+  return { M: S.filter(s => s.gender === 'Male').sort(dutyByName), F: S.filter(s => s.gender === 'Female').sort(dutyByName), none: S.filter(s => s.gender !== 'Male' && s.gender !== 'Female') };
+}
+function dutyPick(list, k){ return list.length ? list[((k % list.length) + list.length) % list.length].id : ''; }
+function dutyGenerate(weeks){
+  const r = dutyR(), tp = dutyTeacherPool(), sp = dutySeniorPool(), thisMon = dutyMonday(new Date());
+  if (!r.anchor) r.anchor = thisMon;
+  const keep = (r.weeks || []).filter(w => w.start < thisMon || w.manual), out = keep.slice();
+  for (let i = 0; i < weeks; i++){
+    const start = dutyAdd(thisMon, 7 * i); if (out.some(w => w.start === start)) continue;
+    const k = dutyWeeksBetween(r.anchor, start);
+    out.push({ start, tM: dutyPick(tp.M, k), tF: dutyPick(tp.F, k), sM: dutyPick(sp.M, k), sF: dutyPick(sp.F, k) });
+  }
+  r.weeks = out.sort((a, b) => a.start.localeCompare(b.start));
+  markMetaDirty('dutyRoster'); saveData();
+}
+function dutyNameT(id){ const t = (DATA.teachers || []).find(x => x.id === id); return t ? t.name : '—'; }
+function dutyNameS(id){ const s = (DATA.students || []).find(x => x.id === id); return s ? s.name : '—'; }
+function dutyText(w){
+  return 'DUTY THIS WEEK (' + dutyFmt(w.start) + ' to ' + dutyFmt(dutyAdd(w.start, 4)) + ')\nTeachers on duty: ' + dutyNameT(w.tM) + ' & ' + dutyNameT(w.tF) + '\nSeniors on duty: ' + dutyNameS(w.sM) + ' & ' + dutyNameS(w.sF) + ' (' + (dutyR().seniorClass || 'JHS 2') + ')';
+}
+function dutySelect(w, f, list, isStudent){
+  const cur = w[f]; let opts = list.map(p => '<option value="' + p.id + '"' + (p.id === cur ? ' selected' : '') + '>' + escapeHtml(p.name) + '</option>').join('');
+  if (cur && !list.some(p => p.id === cur)) opts = '<option value="' + cur + '" selected>' + escapeHtml(isStudent ? dutyNameS(cur) : dutyNameT(cur)) + '</option>' + opts;
+  if (!cur) opts = '<option value="" selected>— none —</option>' + opts;
+  return '<select class="du-sel" onchange="dutySet(\'' + w.start + '\',\'' + f + '\',this.value)">' + opts + '</select>';
+}
+function dutySet(start, f, v){ const w = dutyWeek(start); if (!w) return; w[f] = v; w.manual = true; markMetaDirty('dutyRoster'); saveData(); }
+function dutyOpt(k, v){ const r = dutyR(); if (k === 'seniorClass') r.seniorClass = v; markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
+function dutyExclude(id, on){ const r = dutyR(); r.exclude = (r.exclude || []).filter(x => x !== id); if (on) r.exclude.push(id); markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
+function dutyRun(){ const n = +(document.getElementById('du-weeks') || {}).value || 12; dutyGenerate(n); toast('Roster made for ' + n + ' weeks.'); renderDuty(); }
+function dutyRebuild(){ if (!confirm('Rebuild this week and every week after it? Names you changed by hand in those weeks will be replaced. Past weeks stay as they are.')){ return; } const r = dutyR(), mon = dutyMonday(new Date()); r.weeks = (r.weeks || []).filter(w => w.start < mon); dutyGenerate(+(document.getElementById('du-weeks') || {}).value || 12); renderDuty(); }
+function dutySend(){ const w = dutyWeek(dutyMonday(new Date())); if (!w){ toast('Make the roster first.'); return; } msgSend('all', 'Everyone (all staff)', dutyText(w), 'message'); toast('Sent to all staff.'); }
+function dutyPrint(){
+  const r = dutyR(), rows = (r.weeks || []).filter(w => w.start >= dutyMonday(new Date())).map(w => '<tr><td>' + dutyFmt(w.start) + ' – ' + dutyFmt(dutyAdd(w.start, 4)) + '</td><td>' + escapeHtml(dutyNameT(w.tM)) + '<br>' + escapeHtml(dutyNameT(w.tF)) + '</td><td>' + escapeHtml(dutyNameS(w.sM)) + '<br>' + escapeHtml(dutyNameS(w.sF)) + '</td></tr>').join('');
+  const win = window.open('', '_blank'); if (!win){ toast('Allow pop-ups to print.'); return; }
+  win.document.write('<html><head><title>Duty roster</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px;text-align:left;font-size:13px}th{background:#eee}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || 'School') + ' – Duty roster</h2><table><tr><th>Week</th><th>Teachers on duty</th><th>Seniors on duty (' + escapeHtml(r.seniorClass || 'JHS 2') + ')</th></tr>' + rows + '</table></body></html>');
+  win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+}
+function renderDuty(){
+  const root = document.getElementById('du-root'); if (!root) return;
+  const r = dutyR(), tp = dutyTeacherPool(), sp = dutySeniorPool(), mon = dutyMonday(new Date()), cur = dutyWeek(mon);
+  const classes = (typeof an2ClassOrder === 'function' ? an2ClassOrder() : []).filter(c => /^(primary 6|jhs)/i.test(c));
+  let h = '<div class="panel">';
+  if (cur) h += '<h3 style="margin-top:0;">This week: ' + dutyFmt(cur.start) + ' to ' + dutyFmt(dutyAdd(cur.start, 4)) + '</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;"><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Teachers on duty</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameT(cur.tM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameT(cur.tF)) + '</div></div><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Seniors on duty (' + escapeHtml(r.seniorClass || 'JHS 2') + ')</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameS(cur.sM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameS(cur.sF)) + '</div></div></div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="dutySend()">Send this week to all staff</button><button class="btn btn-sm" onclick="deptMessage(\'duty\')">Message teachers on duty</button><button class="btn btn-sm" onclick="dutyPrint()">Print roster</button></div>';
+  else h += '<h3 style="margin-top:0;">No roster for this week yet</h3><p class="hint">Press <b>Make the roster</b> below.</p>';
+  h += '</div><div class="panel"><h3 style="margin-top:0;">Set up</h3><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;"><div class="field" style="margin:0;"><label>Seniors come from</label><select onchange="dutyOpt(\'seniorClass\',this.value)">' + classes.map(c => '<option' + (c === (r.seniorClass || 'JHS 2') ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div><div class="field" style="margin:0;"><label>Weeks to plan</label><input type="number" id="du-weeks" value="12" min="1" max="52" style="width:90px;"></div><button class="btn btn-primary" onclick="dutyRun()">Make the roster</button><button class="btn" onclick="dutyRebuild()">Rebuild from this week</button></div>'
+    + '<p class="hint">Each week has one boy and one girl for teachers and one boy and one girl for seniors. Everyone takes a turn before anyone repeats. Duty runs Monday to Friday.</p>'
+    + '<div class="hint" style="margin:6px 0;">Teachers: <b>' + tp.M.length + '</b> male, <b>' + tp.F.length + '</b> female · Seniors: <b>' + sp.M.length + '</b> boys, <b>' + sp.F.length + '</b> girls</div>'
+    + ((tp.none.length || sp.none.length) ? '<div class="hint" style="color:#b45309;">Left out because gender is not set: ' + tp.none.concat(sp.none).map(p => escapeHtml(p.name)).join(', ') + '. Set it in their profile, then rebuild.</div>' : '')
+    + '<details style="margin-top:8px;"><summary style="cursor:pointer;font-weight:700;">Teachers who should not be on duty</summary><div style="margin-top:6px;display:flex;gap:6px 16px;flex-wrap:wrap;">' + deptPeople().map(t => '<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" ' + ((r.exclude || []).indexOf(t.id) >= 0 ? 'checked ' : '') + 'onchange="dutyExclude(\'' + t.id + '\',this.checked)"> ' + escapeHtml(t.name) + '</label>').join('') + '</div></details></div>';
+  const weeks = (r.weeks || []).filter(w => w.start >= dutyAdd(mon, -14));
+  if (weeks.length) h += '<div class="panel" style="overflow:auto;"><h3 style="margin-top:0;">Roster</h3><p class="hint" style="margin-top:0;">You can change any name from the lists.</p><table><thead><tr><th>Week</th><th>Teacher (boy)</th><th>Teacher (girl)</th><th>Senior (boy)</th><th>Senior (girl)</th></tr></thead><tbody>'
+    + weeks.map(w => '<tr' + (w.start === mon ? ' style="background:rgba(46,158,91,.12);"' : '') + '><td style="white-space:nowrap;"><strong>' + dutyFmt(w.start) + '</strong>' + (w.start === mon ? ' <span class="status-badge status-paid">now</span>' : '') + '</td><td>' + dutySelect(w, 'tM', tp.M, false) + '</td><td>' + dutySelect(w, 'tF', tp.F, false) + '</td><td>' + dutySelect(w, 'sM', sp.M, true) + '</td><td>' + dutySelect(w, 'sF', sp.F, true) + '</td></tr>').join('') + '</tbody></table></div>';
+  root.innerHTML = h;
+}
+function dutyTeacherNote(t){
+  const w = dutyWeek(dutyMonday(new Date())); if (!w || !t) return;
+  if (w.tM !== t.id && w.tF !== t.id) return;
+  const mate = w.tM === t.id ? w.tF : w.tM, el = document.getElementById('th-sub');
+  if (el) el.innerHTML = el.innerHTML + ' · <b style="color:#b45309;">You are on duty this week' + (mate ? ' with ' + escapeHtml(dutyNameT(mate)) : '') + '</b>';
+}
+</script>
+
 </body>
 </html>
