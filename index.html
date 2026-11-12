@@ -12167,7 +12167,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.12-a';
+const APP_VERSION = '2026.11.12-b';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -14034,7 +14034,7 @@ function deptAuto(id){
   return deptPeople().filter(t => (t.allocations || []).some(a => a.class && a.class !== '*' && d.re.test(deptAllocClass(a))));
 }
 function deptMembers(id){
-  if (id === 'duty'){ const w = dutyWeek(dutyMonday(new Date())); return w ? [w.tM, w.tF].map(x => (DATA.teachers || []).find(t => t.id === x)).filter(Boolean) : []; }
+  if (id === 'duty'){ const w = dutyWeek(dutyMonday(new Date())); if (w && w.all) return deptPeople().filter(t => ((DATA.dutyRoster && DATA.dutyRoster.exclude) || []).indexOf(t.id) < 0); return w && !w.removed ? [w.tM, w.tF].map(x => (DATA.teachers || []).find(t => t.id === x)).filter(Boolean) : []; }
   const cfg = (DATA.departments && DATA.departments[id]) || { add: [], remove: [] }, auto = deptAuto(id);
   const ids = auto.map(t => t.id).filter(x => (cfg.remove || []).indexOf(x) < 0).concat((cfg.add || []).filter(x => auto.every(t => t.id !== x)));
   return ids.map(x => (DATA.teachers || []).find(t => t.id === x)).filter(Boolean);
@@ -14077,60 +14077,86 @@ function dutySeniorPool(){
   return { M: S.filter(s => s.gender === 'Male').sort(dutyByName), F: S.filter(s => s.gender === 'Female').sort(dutyByName), none: S.filter(s => s.gender !== 'Male' && s.gender !== 'Female') };
 }
 function dutyPick(list, k){ return list.length ? list[((k % list.length) + list.length) % list.length].id : ''; }
-function dutyGenerate(weeks){
+function dutyTermWeeks(){
+  let cal = null; try{ cal = attendanceCalendar(); }catch(e){}
+  if (!cal || cal.error) return null;
+  const out = [];
+  cal.weeks.forEach((days, i) => {
+    const last = i === cal.weeks.length - 1;
+    if (last || days.some(d => d.status === 'school')) out.push({ start: days[0].date, last });
+  });
+  return out;
+}
+function dutyGenerate(fallbackWeeks){
   const r = dutyR(), tp = dutyTeacherPool(), sp = dutySeniorPool(), thisMon = dutyMonday(new Date());
-  if (!r.anchor) r.anchor = thisMon;
-  const keep = (r.weeks || []).filter(w => w.start < thisMon || w.manual), out = keep.slice();
-  for (let i = 0; i < weeks; i++){
-    const start = dutyAdd(thisMon, 7 * i); if (out.some(w => w.start === start)) continue;
-    const k = dutyWeeksBetween(r.anchor, start);
-    out.push({ start, tM: dutyPick(tp.M, k), tF: dutyPick(tp.F, k), sM: dutyPick(sp.M, k), sF: dutyPick(sp.F, k) });
-  }
-  r.weeks = out.sort((a, b) => a.start.localeCompare(b.start));
+  let term = dutyTermWeeks();
+  if (!term){ term = []; for (let i = 0; i < (fallbackWeeks || 12); i++) term.push({ start: dutyAdd(thisMon, 7 * i), last: false }); }
+  const termStarts = term.map(w => w.start);
+  const keep = (r.weeks || []).filter(w => w.start < thisMon || w.manual || w.removed);
+  const all = {}; keep.forEach(w => { all[w.start] = w; });
+  term.forEach(t => { if (!all[t.start]) all[t.start] = { start: t.start, fresh: true, last: t.last }; else if (t.last) all[t.start].last = true; });
+  const list = Object.keys(all).sort().map(k => all[k]);
+  let k = 0;
+  list.forEach(w => {
+    if (w.removed) return;
+    if (w.last && termStarts.indexOf(w.start) >= 0){ if (w.fresh){ w.all = true; w.tM = w.tF = w.sM = w.sF = ''; } return; }
+    if (w.fresh){ w.tM = dutyPick(tp.M, k); w.tF = dutyPick(tp.F, k); w.sM = dutyPick(sp.M, k); w.sF = dutyPick(sp.F, k); }
+    if (!w.all) k++;
+  });
+  list.forEach(w => { delete w.fresh; });
+  if (!r.anchor) r.anchor = list.length ? list[0].start : thisMon;
+  r.weeks = list;
   markMetaDirty('dutyRoster'); saveData();
+  return term.length;
 }
 function dutyNameT(id){ const t = (DATA.teachers || []).find(x => x.id === id); return t ? t.name : '—'; }
 function dutyNameS(id){ const s = (DATA.students || []).find(x => x.id === id); return s ? s.name : '—'; }
 function dutyText(w){
+  if (w.all) return 'VACATION WEEK (' + dutyFmt(w.start) + ' to ' + dutyFmt(dutyAdd(w.start, 4)) + ')\nAll teachers and all seniors are on duty this week.';
   return 'DUTY THIS WEEK (' + dutyFmt(w.start) + ' to ' + dutyFmt(dutyAdd(w.start, 4)) + ')\nTeachers on duty: ' + dutyNameT(w.tM) + ' & ' + dutyNameT(w.tF) + '\nSeniors on duty: ' + dutyNameS(w.sM) + ' & ' + dutyNameS(w.sF) + ' (' + (dutyR().seniorClass || 'JHS 2') + ')';
 }
 function dutySelect(w, f, list, isStudent){
   const cur = w[f]; let opts = list.map(p => '<option value="' + p.id + '"' + (p.id === cur ? ' selected' : '') + '>' + escapeHtml(p.name) + '</option>').join('');
   if (cur && !list.some(p => p.id === cur)) opts = '<option value="' + cur + '" selected>' + escapeHtml(isStudent ? dutyNameS(cur) : dutyNameT(cur)) + '</option>' + opts;
-  if (!cur) opts = '<option value="" selected>— none —</option>' + opts;
+  opts = '<option value=""' + (cur ? '' : ' selected') + '>— none —</option>' + opts;
   return '<select class="du-sel" onchange="dutySet(\'' + w.start + '\',\'' + f + '\',this.value)">' + opts + '</select>';
 }
+function dutyAllToggle(start, on){ const w = dutyWeek(start); if (!w) return; w.all = !!on; w.manual = true; markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
+function dutyDelWeek(start){ const r = dutyR(); r.weeks = (r.weeks || []).filter(w => w.start !== start); r.weeks.push({ start, removed: true, tM: '', tF: '', sM: '', sF: '', manual: true, none: true }); r.weeks.sort((a, b) => a.start.localeCompare(b.start)); markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
 function dutySet(start, f, v){ const w = dutyWeek(start); if (!w) return; w[f] = v; w.manual = true; markMetaDirty('dutyRoster'); saveData(); }
 function dutyOpt(k, v){ const r = dutyR(); if (k === 'seniorClass') r.seniorClass = v; markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
 function dutyExclude(id, on){ const r = dutyR(); r.exclude = (r.exclude || []).filter(x => x !== id); if (on) r.exclude.push(id); markMetaDirty('dutyRoster'); saveData(); renderDuty(); }
-function dutyRun(){ const n = +(document.getElementById('du-weeks') || {}).value || 12; dutyGenerate(n); toast('Roster made for ' + n + ' weeks.'); renderDuty(); }
+function dutyRun(){ const n = dutyGenerate(+(document.getElementById('du-weeks') || {}).value || 12); toast('Roster made for ' + n + ' weeks.'); renderDuty(); }
 function dutyRebuild(){ if (!confirm('Rebuild this week and every week after it? Names you changed by hand in those weeks will be replaced. Past weeks stay as they are.')){ return; } const r = dutyR(), mon = dutyMonday(new Date()); r.weeks = (r.weeks || []).filter(w => w.start < mon); dutyGenerate(+(document.getElementById('du-weeks') || {}).value || 12); renderDuty(); }
-function dutySend(){ const w = dutyWeek(dutyMonday(new Date())); if (!w){ toast('Make the roster first.'); return; } msgSend('all', 'Everyone (all staff)', dutyText(w), 'message'); toast('Sent to all staff.'); }
+function dutySend(){ const w = dutyWeek(dutyMonday(new Date())); if (!w || w.removed){ toast('Make the roster first.'); return; } msgSend('all', 'Everyone (all staff)', dutyText(w), 'message'); toast('Sent to all staff.'); }
 function dutyPrint(){
-  const r = dutyR(), rows = (r.weeks || []).filter(w => w.start >= dutyMonday(new Date())).map(w => '<tr><td>' + dutyFmt(w.start) + ' – ' + dutyFmt(dutyAdd(w.start, 4)) + '</td><td>' + escapeHtml(dutyNameT(w.tM)) + '<br>' + escapeHtml(dutyNameT(w.tF)) + '</td><td>' + escapeHtml(dutyNameS(w.sM)) + '<br>' + escapeHtml(dutyNameS(w.sF)) + '</td></tr>').join('');
+  const r = dutyR(), rows = (r.weeks || []).filter(w => !w.removed && w.start >= dutyMonday(new Date())).map(w => '<tr><td>' + dutyFmt(w.start) + ' – ' + dutyFmt(dutyAdd(w.start, 4)) + '</td>' + (w.all ? '<td colspan="2"><b>Everyone (vacation week): all teachers and all seniors</b></td></tr>' : '<td>' + escapeHtml(dutyNameT(w.tM)) + '<br>' + escapeHtml(dutyNameT(w.tF)) + '</td><td>' + escapeHtml(dutyNameS(w.sM)) + '<br>' + escapeHtml(dutyNameS(w.sF)) + '</td></tr>')).join('');
   const win = window.open('', '_blank'); if (!win){ toast('Allow pop-ups to print.'); return; }
   win.document.write('<html><head><title>Duty roster</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px;text-align:left;font-size:13px}th{background:#eee}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || 'School') + ' – Duty roster</h2><table><tr><th>Week</th><th>Teachers on duty</th><th>Seniors on duty (' + escapeHtml(r.seniorClass || 'JHS 2') + ')</th></tr>' + rows + '</table></body></html>');
   win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
 }
 function renderDuty(){
   const root = document.getElementById('du-root'); if (!root) return;
-  const r = dutyR(), tp = dutyTeacherPool(), sp = dutySeniorPool(), mon = dutyMonday(new Date()), cur = dutyWeek(mon);
+  const r = dutyR(), tp = dutyTeacherPool(), sp = dutySeniorPool(), mon = dutyMonday(new Date()), cur = (dutyWeek(mon) && !dutyWeek(mon).removed) ? dutyWeek(mon) : null, tw = dutyTermWeeks();
   const classes = (typeof an2ClassOrder === 'function' ? an2ClassOrder() : []).filter(c => /^(primary 6|jhs)/i.test(c));
   let h = '<div class="panel">';
-  if (cur) h += '<h3 style="margin-top:0;">This week: ' + dutyFmt(cur.start) + ' to ' + dutyFmt(dutyAdd(cur.start, 4)) + '</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;"><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Teachers on duty</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameT(cur.tM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameT(cur.tF)) + '</div></div><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Seniors on duty (' + escapeHtml(r.seniorClass || 'JHS 2') + ')</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameS(cur.sM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameS(cur.sF)) + '</div></div></div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="dutySend()">Send this week to all staff</button><button class="btn btn-sm" onclick="deptMessage(\'duty\')">Message teachers on duty</button><button class="btn btn-sm" onclick="dutyPrint()">Print roster</button></div>';
+  if (cur && cur.all) h += '<h3 style="margin-top:0;">This week: ' + dutyFmt(cur.start) + ' to ' + dutyFmt(dutyAdd(cur.start, 4)) + '</h3><div style="border:1px solid var(--line);border-radius:14px;padding:14px;font-weight:700;">Vacation week: all teachers and all seniors are on duty.</div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="dutySend()">Send this week to all staff</button><button class="btn btn-sm" onclick="dutyPrint()">Print roster</button></div>';
+  else if (cur) h += '<h3 style="margin-top:0;">This week: ' + dutyFmt(cur.start) + ' to ' + dutyFmt(dutyAdd(cur.start, 4)) + '</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;"><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Teachers on duty</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameT(cur.tM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameT(cur.tF)) + '</div></div><div style="border:1px solid var(--line);border-radius:14px;padding:12px;"><div class="hint" style="margin:0;">Seniors on duty (' + escapeHtml(r.seniorClass || 'JHS 2') + ')</div><div style="font-weight:700;">♂ ' + escapeHtml(dutyNameS(cur.sM)) + '</div><div style="font-weight:700;">♀ ' + escapeHtml(dutyNameS(cur.sF)) + '</div></div></div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="dutySend()">Send this week to all staff</button><button class="btn btn-sm" onclick="deptMessage(\'duty\')">Message teachers on duty</button><button class="btn btn-sm" onclick="dutyPrint()">Print roster</button></div>';
   else h += '<h3 style="margin-top:0;">No roster for this week yet</h3><p class="hint">Press <b>Make the roster</b> below.</p>';
-  h += '</div><div class="panel"><h3 style="margin-top:0;">Set up</h3><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;"><div class="field" style="margin:0;"><label>Seniors come from</label><select onchange="dutyOpt(\'seniorClass\',this.value)">' + classes.map(c => '<option' + (c === (r.seniorClass || 'JHS 2') ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div><div class="field" style="margin:0;"><label>Weeks to plan</label><input type="number" id="du-weeks" value="12" min="1" max="52" style="width:90px;"></div><button class="btn btn-primary" onclick="dutyRun()">Make the roster</button><button class="btn" onclick="dutyRebuild()">Rebuild from this week</button></div>'
+  h += '</div><div class="panel"><h3 style="margin-top:0;">Set up</h3><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;"><div class="field" style="margin:0;"><label>Seniors come from</label><select onchange="dutyOpt(\'seniorClass\',this.value)">' + classes.map(c => '<option' + (c === (r.seniorClass || 'JHS 2') ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' + (tw ? '' : '<div class="field" style="margin:0;"><label>Weeks to plan</label><input type="number" id="du-weeks" value="12" min="1" max="52" style="width:90px;"></div>') + '<button class="btn btn-primary" onclick="dutyRun()">Make the roster</button><button class="btn" onclick="dutyRebuild()">Rebuild from this week</button></div>'
+    + (tw ? '<p class="hint">Weeks follow your attendance calendar: <b>' + tw.length + ' weeks</b> from ' + dutyFmt(tw[0].start) + ' to the week school vacates (' + dutyFmt(tw[tw.length - 1].start) + '). That last week is a vacation week: <b>all teachers and all seniors</b> are on duty.</p>' : '<p class="hint" style="color:#b45309;">Set the date the term began and the vacation date under Academic Records → Report Settings so the roster follows your attendance weeks. Until then it plans normal weeks from today.</p>')
     + '<p class="hint">Each week has one boy and one girl for teachers and one boy and one girl for seniors. Everyone takes a turn before anyone repeats. Duty runs Monday to Friday.</p>'
     + '<div class="hint" style="margin:6px 0;">Teachers: <b>' + tp.M.length + '</b> male, <b>' + tp.F.length + '</b> female · Seniors: <b>' + sp.M.length + '</b> boys, <b>' + sp.F.length + '</b> girls</div>'
     + ((tp.none.length || sp.none.length) ? '<div class="hint" style="color:#b45309;">Left out because gender is not set: ' + tp.none.concat(sp.none).map(p => escapeHtml(p.name)).join(', ') + '. Set it in their profile, then rebuild.</div>' : '')
     + '<details style="margin-top:8px;"><summary style="cursor:pointer;font-weight:700;">Teachers who should not be on duty</summary><div style="margin-top:6px;display:flex;gap:6px 16px;flex-wrap:wrap;">' + deptPeople().map(t => '<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" ' + ((r.exclude || []).indexOf(t.id) >= 0 ? 'checked ' : '') + 'onchange="dutyExclude(\'' + t.id + '\',this.checked)"> ' + escapeHtml(t.name) + '</label>').join('') + '</div></details></div>';
-  const weeks = (r.weeks || []).filter(w => w.start >= dutyAdd(mon, -14));
-  if (weeks.length) h += '<div class="panel" style="overflow:auto;"><h3 style="margin-top:0;">Roster</h3><p class="hint" style="margin-top:0;">You can change any name from the lists.</p><table><thead><tr><th>Week</th><th>Teacher (boy)</th><th>Teacher (girl)</th><th>Senior (boy)</th><th>Senior (girl)</th></tr></thead><tbody>'
-    + weeks.map(w => '<tr' + (w.start === mon ? ' style="background:rgba(46,158,91,.12);"' : '') + '><td style="white-space:nowrap;"><strong>' + dutyFmt(w.start) + '</strong>' + (w.start === mon ? ' <span class="status-badge status-paid">now</span>' : '') + '</td><td>' + dutySelect(w, 'tM', tp.M, false) + '</td><td>' + dutySelect(w, 'tF', tp.F, false) + '</td><td>' + dutySelect(w, 'sM', sp.M, true) + '</td><td>' + dutySelect(w, 'sF', sp.F, true) + '</td></tr>').join('') + '</tbody></table></div>';
+  const weeks = (r.weeks || []).filter(w => !w.removed && w.start >= dutyAdd(mon, -14));
+  if (weeks.length) h += '<div class="panel" style="overflow:auto;"><h3 style="margin-top:0;">Roster</h3><p class="hint" style="margin-top:0;">You can change any name from the lists.</p><table><thead><tr><th>Week</th><th>Teacher (boy)</th><th>Teacher (girl)</th><th>Senior (boy)</th><th>Senior (girl)</th><th></th></tr></thead><tbody>'
+    + weeks.map(w => '<tr' + (w.start === mon ? ' style="background:rgba(46,158,91,.12);"' : '') + '><td style="white-space:nowrap;"><strong>' + dutyFmt(w.start) + '</strong>' + (w.start === mon ? ' <span class="status-badge status-paid">now</span>' : '') + '</td>' + (w.all ? '<td colspan="4"><b>Everyone: all teachers and all seniors</b> <span class="hint" style="margin:0;">(vacation week)</span></td>' : '<td>' + dutySelect(w, 'tM', tp.M, false) + '</td><td>' + dutySelect(w, 'tF', tp.F, false) + '</td><td>' + dutySelect(w, 'sM', sp.M, true) + '</td><td>' + dutySelect(w, 'sF', sp.F, true) + '</td>') + '<td style="white-space:nowrap;"><label class="hint" style="margin:0;"><input type="checkbox" ' + (w.all ? 'checked ' : '') + 'onchange="dutyAllToggle(\'' + w.start + '\',this.checked)"> everyone</label> <button class="btn btn-sm" title="Remove this week" onclick="dutyDelWeek(\'' + w.start + '\')">✕</button></td></tr>').join('') + '</tbody></table></div>';
   root.innerHTML = h;
 }
 function dutyTeacherNote(t){
-  const w = dutyWeek(dutyMonday(new Date())); if (!w || !t) return;
+  const w = dutyWeek(dutyMonday(new Date())); if (!w || !t || w.removed) return;
+  if (w.all){ const e = document.getElementById('th-sub'); if (e) e.innerHTML = e.innerHTML + ' · <b style="color:#b45309;">Vacation week: all teachers on duty</b>'; return; }
   if (w.tM !== t.id && w.tF !== t.id) return;
   const mate = w.tM === t.id ? w.tF : w.tM, el = document.getElementById('th-sub');
   if (el) el.innerHTML = el.innerHTML + ' · <b style="color:#b45309;">You are on duty this week' + (mate ? ' with ' + escapeHtml(dutyNameT(mate)) : '') + '</b>';
