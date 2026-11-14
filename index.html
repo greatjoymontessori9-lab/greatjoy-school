@@ -1884,6 +1884,25 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pay-edit-overlay">
+  <div class="modal" style="max-width:480px;">
+    <h3>Edit payment</h3>
+    <div id="pay-edit-note" class="hint" style="margin-bottom:10px;"></div>
+    <div class="grid-2">
+      <div class="field"><label>Class</label><select id="pe-class" onchange="payEditFillStudents()"></select></div>
+      <div class="field"><label>Student</label><select id="pe-student"></select></div>
+      <div class="field"><label>Amount paid</label><input type="number" step="0.01" id="pe-amount"></div>
+      <div class="field"><label>Date</label><input type="date" id="pe-date"></div>
+      <div class="field"><label>Receipt no.</label><input type="text" id="pe-receipt"></div>
+    </div>
+    <div id="pe-feedback" class="hint" style="min-height:18px;color:var(--red,#c0392b);"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="payEditClose()">Cancel</button>
+      <button class="btn btn-primary" onclick="payEditSave()">Save changes</button>
+    </div>
+  </div>
+</div>
+
 <div class="rp-overlay" id="report-popup" onclick="if(event.target===this)closeReportPopup()">
   <div class="rp-box" role="dialog" aria-modal="true" aria-labelledby="rp-title">
     <div class="rp-bar">
@@ -7066,7 +7085,7 @@ function renderPaymentsLog(){
     const s = DATA.students.find(x=>x.id===p.studentId);
     return `<tr><td>${p.receiptNo}</td><td>${s? escapeHtml(s.name):'(deleted)'}</td><td>${s?escapeHtml(s.class):''}</td>
       <td class="num-cell">${fmtMoney(p.amount)}</td><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.recordedBy||'')}</td>
-      <td class="admin-only"><button class="btn btn-sm btn-danger" onclick="deletePayment('${p.id}')">Delete</button></td></tr>`;
+      <td class="admin-only" style="white-space:nowrap;"><button class="btn btn-sm" onclick="payEditOpen('tuition','${p.id}')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePayment('${p.id}')">Delete</button></td></tr>`;
   }).join('');
   document.getElementById('payments-log-wrap').innerHTML =
     `<table><thead><tr><th>Receipt</th><th>Student</th><th>Class</th><th>Amount</th><th>Date</th><th>By</th><th class="admin-only"></th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -7079,6 +7098,67 @@ function deletePayment(id){
   saveData();
   renderPaymentsLog();
   renderDashboard();
+}
+
+/* ---------- Edit a payment (admin) instead of deleting and re-entering it ---------- */
+let payEditCtx = null;
+function payEditList(kind){
+  if (kind === 'admission') return { arr: DATA.registries.admission.payments, coll: 'AdmissionPayments' };
+  if (kind === 'feeding') return { arr: DATA.registries.feeding.payments, coll: 'FeedingPayments' };
+  return { arr: DATA.payments, coll: 'Payments' };
+}
+function payEditOpen(kind, id){
+  if (session.role !== 'admin'){ toast('Only the admin can edit a payment.'); return; }
+  const rec = payEditList(kind).arr.find(p => p.id === id); if (!rec){ toast('Payment not found.'); return; }
+  const stu = DATA.students.find(x => x.id === rec.studentId);
+  payEditCtx = { kind, id };
+  const classes = [...new Set(DATA.students.map(x => x.class))].sort((a,b)=>a.localeCompare(b));
+  const cur = stu ? stu.class : '';
+  document.getElementById('pe-class').innerHTML = classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  document.getElementById('pe-class').value = cur;
+  payEditFillStudents(rec.studentId);
+  document.getElementById('pe-amount').value = rec.amount;
+  document.getElementById('pe-date').value = (rec.date || '').slice(0,10);
+  document.getElementById('pe-receipt').value = rec.receiptNo || '';
+  document.getElementById('pe-feedback').textContent = '';
+  const kn = kind === 'admission' ? 'Admission fee' : kind === 'feeding' ? 'Feeding fee' : 'School fees';
+  document.getElementById('pay-edit-note').textContent = `${kn} payment, first recorded by ${rec.recordedBy || 'unknown'}${rec.timestamp ? ' on ' + fmtDate(rec.timestamp.slice(0,10)) : ''}.` + (rec.editedBy ? ` Last edited by ${rec.editedBy}.` : '');
+  document.getElementById('pay-edit-overlay').classList.add('active');
+}
+function payEditFillStudents(selectId){
+  const cls = document.getElementById('pe-class').value, sel = document.getElementById('pe-student');
+  const list = DATA.students.filter(x => x.class === cls).sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML = list.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join('');
+  if (selectId) sel.value = selectId;
+}
+function payEditClose(){ document.getElementById('pay-edit-overlay').classList.remove('active'); payEditCtx = null; }
+function payEditSave(){
+  if (!payEditCtx) return;
+  const fb = document.getElementById('pe-feedback');
+  const { kind, id } = payEditCtx, L = payEditList(kind), rec = L.arr.find(p => p.id === id);
+  if (!rec){ payEditClose(); return; }
+  const studentId = document.getElementById('pe-student').value;
+  const amount = parseFloat(document.getElementById('pe-amount').value);
+  const date = document.getElementById('pe-date').value;
+  const receipt = document.getElementById('pe-receipt').value.trim();
+  if (!studentId){ fb.textContent = 'Choose the student.'; return; }
+  if (!(amount > 0)){ fb.textContent = 'Enter an amount greater than zero.'; return; }
+  if (!date){ fb.textContent = 'Enter a date.'; return; }
+  if (!receipt){ fb.textContent = 'Enter a receipt number.'; return; }
+  if (studentId === rec.studentId && amount === +rec.amount && date === (rec.date || '').slice(0,10) && receipt === String(rec.receiptNo || '')){ payEditClose(); return; }
+  const dup = [DATA.payments, DATA.registries.admission.payments, DATA.registries.feeding.payments].some(a => a.some(p => p.id !== id && String(p.receiptNo) === receipt));
+  if (dup && !confirm('Another payment already uses receipt number ' + receipt + '. Save anyway?')) return;
+  rec.edits = (rec.edits || []).concat([{ at: new Date().toISOString(), by: session.role, was: { studentId: rec.studentId, amount: rec.amount, date: rec.date, receiptNo: rec.receiptNo } }]).slice(-5);
+  rec.studentId = studentId; rec.amount = amount; rec.date = date; rec.receiptNo = receipt;
+  rec.editedBy = session.role; rec.updatedAt = new Date().toISOString();
+  saveData();
+  const sid = rec.studentId;
+  payEditClose();
+  if (document.getElementById('payments-log-wrap')) renderPaymentsLog();
+  if (kind === 'admission'){ if (document.getElementById('history-modal-overlay').classList.contains('active')) renderAdmissionHistoryBody(sid); try{ renderAdmissionFeesView(true); }catch(e){} }
+  if (kind === 'feeding'){ if (document.getElementById('history-modal-overlay').classList.contains('active')) renderFeedingHistoryBody(sid); try{ renderFeedRoster(); }catch(e){} }
+  try{ renderDashboard(); }catch(e){}
+  toast('Payment updated.');
 }
 
 /* ---------- History modals: fix a mistaken admission-fee or feeding-fee entry ---------- */
@@ -7094,7 +7174,7 @@ function renderAdmissionHistoryBody(studentId){
   const rows = DATA.registries.admission.payments.filter(p=>p.studentId===studentId).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   document.getElementById('history-modal-body').innerHTML = rows.length ? `<table><thead><tr><th>Date</th><th>Receipt</th><th>Amount</th><th></th></tr></thead><tbody>${
     rows.map(p => `<tr><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.receiptNo||'')}</td><td class="num-cell">${fmtMoney(p.amount)}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="deleteAdmissionPayment('${p.id}','${studentId}')">Delete</button></td></tr>`).join('')
+      <td style="white-space:nowrap;">${session.role === 'admin' ? `<button class="btn btn-sm" onclick="payEditOpen('admission','${p.id}')">Edit</button> ` : ''}<button class="btn btn-sm btn-danger" onclick="deleteAdmissionPayment('${p.id}','${studentId}')">Delete</button></td></tr>`).join('')
   }</tbody></table>` : '<div class="empty-state">No payments recorded yet.</div>';
 }
 function deleteAdmissionPayment(id, studentId){
@@ -7122,7 +7202,7 @@ function renderFeedingHistoryBody(studentId){
   }</tbody></table>` : '<div class="empty-state">None.</div>';
   const payRows = pays.length ? `<table><thead><tr><th>Date</th><th>Receipt</th><th>Amount</th><th></th></tr></thead><tbody>${
     pays.map(p => `<tr><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.receiptNo||'')}</td><td class="num-cell">${fmtMoney(p.amount)}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="deleteFeedingPayment('${p.id}','${studentId}')">Delete</button></td></tr>`).join('')
+      <td style="white-space:nowrap;">${session.role === 'admin' ? `<button class="btn btn-sm" onclick="payEditOpen('feeding','${p.id}')">Edit</button> ` : ''}<button class="btn btn-sm btn-danger" onclick="deleteFeedingPayment('${p.id}','${studentId}')">Delete</button></td></tr>`).join('')
   }</tbody></table>` : '<div class="empty-state">No payments recorded yet.</div>';
   const auto = feedingAutoDays(studentId);
   const autoRows = auto.length ? `<table><thead><tr><th>Date</th><th>Rate</th></tr></thead><tbody>${auto.map(d => `<tr><td>${fmtDate(d.date)}</td><td class="num-cell">${fmtMoney(d.rate)}</td></tr>`).join('')}</tbody></table><p class="hint">${auto.length} day(s) present = ${fmtMoney(feedingAutoBilled(studentId))}</p>` : '<div class="empty-state">No present days billed automatically yet.</div>';
@@ -12167,7 +12247,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.12-c';
+const APP_VERSION = '2026.11.14-a';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
