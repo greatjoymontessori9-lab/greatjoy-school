@@ -1384,6 +1384,7 @@
             <input type="text" id="staff-search" placeholder="Search name, ID or position…" oninput="renderStaffView()" style="flex:1;min-width:180px;">
             <select id="staff-filter-type" onchange="renderStaffView()"><option value="all">All staff</option><option value="Teaching">Teaching</option><option value="Non-teaching">Non-teaching</option></select>
             <select id="staff-filter-pos" onchange="renderStaffView()"><option value="all">All positions</option></select>
+            <button class="btn admin-only vo-keep" onclick="posOpen()">Manage positions</button>
           </div>
           <div class="table-wrap"><table><thead><tr><th>#</th><th>ID Number</th><th>Name</th><th>Type</th><th>Position</th><th>Phone</th><th>EMIS code</th><th class="admin-only"></th></tr></thead><tbody id="staff-tbody"></tbody></table></div>
         </div>
@@ -1884,6 +1885,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="pos-overlay">
+  <div class="modal" style="max-width:520px;">
+    <h3>Staff positions</h3>
+    <p class="hint">These are the choices offered when you add or edit a staff member. Tap &times; to remove one. Staff who already have it keep it.</p>
+    <div id="pos-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;"></div>
+    <div style="display:flex;gap:8px;"><input type="text" id="pos-new" placeholder="New position, for example Driver" style="flex:1;" onkeydown="if(event.key==='Enter')posAdd()"><button class="btn btn-primary vo-keep" onclick="posAdd()">Add</button></div>
+    <div id="pos-note" class="hint"></div>
+    <div class="modal-actions"><button class="btn vo-keep" onclick="posReset()">Reset to suggested</button><button class="btn btn-primary vo-keep" onclick="posClose()">Done</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pay-edit-overlay">
   <div class="modal" style="max-width:480px;">
     <h3>Edit payment</h3>
@@ -2187,6 +2199,7 @@ function buildSyncMetaPayload(){
     timetableResult: ttSyncResult(),
     departments: DATA.departments || null,
     dutyRoster: DATA.dutyRoster || null,
+    positionList: DATA.positionList || null,
     uiTheme: DATA.uiTheme || 'classic',
     loginFlyers: Array.isArray(DATA.loginFlyers) ? DATA.loginFlyers.filter(g => String(g.img || '').indexOf('data:') !== 0) : null,   // only pictures already on Drive travel
     sigGallery: (DATA.sigGallery || []).filter(g => String(g.img || '').indexOf('data:') !== 0)   // only pictures already on Drive travel in the shared settings
@@ -2223,6 +2236,7 @@ function applySyncMetaFromServer(serverMeta){
   if (newer('timetable') && serverMeta.timetable.value && serverMeta.timetable.value.schedules){ DATA.timetable = serverMeta.timetable.value; local.timetable = serverMeta.timetable.updatedAt; }
   if (newer('timetableResult') && serverMeta.timetableResult.value && serverMeta.timetableResult.value.grid){ DATA.timetableResult = serverMeta.timetableResult.value; local.timetableResult = serverMeta.timetableResult.updatedAt; }
   if (newer('departments') && serverMeta.departments.value && typeof serverMeta.departments.value === 'object'){ DATA.departments = serverMeta.departments.value; local.departments = serverMeta.departments.updatedAt; }
+  if (newer('positionList') && Array.isArray(serverMeta.positionList.value)){ DATA.positionList = serverMeta.positionList.value; local.positionList = serverMeta.positionList.updatedAt; }
   if (newer('dutyRoster') && serverMeta.dutyRoster.value && typeof serverMeta.dutyRoster.value === 'object'){ DATA.dutyRoster = serverMeta.dutyRoster.value; local.dutyRoster = serverMeta.dutyRoster.updatedAt; }
   if (newer('uiTheme') && typeof serverMeta.uiTheme.value === 'string'){ DATA.uiTheme = serverMeta.uiTheme.value; local.uiTheme = serverMeta.uiTheme.updatedAt; try{ applyTheme(DATA.uiTheme); }catch(e){} }
   if (newer('loginFlyers') && Array.isArray(serverMeta.loginFlyers.value)){
@@ -2927,7 +2941,7 @@ async function hostedBoot(){
           const r = await hostedCall({ action:'createSchool', schoolName: nm, adminPassword: DATA.auth.adminPassword, cashierPassword: DATA.auth.cashierPassword, logo: DATA.meta.logo || null });
           const now = new Date().toISOString();
           DATA.sync.metaUpdatedAt = DATA.sync.metaUpdatedAt || {};
-        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
+        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster','positionList'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
           DATA.sync.pushedHashes = {}; DATA.sync.lastKnownServerIds = {}; DATA.sync.dirty = true;
           saveData();
         }
@@ -3421,9 +3435,17 @@ function bdayOverviewHtml(){
   return '<div style="overflow-x:auto;"><table><thead><tr><th>Who</th><th>Birthday</th><th>When</th></tr></thead><tbody>' + list.map(x => '<tr><td><strong>' + escapeHtml(x.t.name) + '</strong>' + (x.days === 0 ? ' 🎂' : '') + '</td><td>' + x.d + ' ' + TPROF_MONTHS[x.m - 1] + '</td><td>' + (x.days === 0 ? '<span class="status-badge status-paid">Today 🎂</span>' : x.days === 1 ? 'Tomorrow' : 'In ' + x.days + ' days') + '</td></tr>').join('') + '</tbody></table></div>';
 }
 /* ---------- the Messages page ---------- */
-let MSG_TAB = 'inbox';
+let MSG_TAB = 'inbox', MSG_SEC = 'hub', MSG_F = 'all', MSG_PG = 0, SA_PG = 0, SA_Q = '', SA_USERS = null;
+const MSG_PER = 4;
+function msgSec(k){ MSG_SEC = k; MSG_PG = 0; if (k === 'inbox') MSG_F = 'all'; renderMessages(); window.scrollTo(0, 0); }
+function msgFilt(f){ MSG_F = f; MSG_PG = 0; renderMessages(); }
+function msgPage(d){ MSG_PG = Math.max(0, MSG_PG + d); renderMessages(); }
+function msgTile(ico, title, sub, click, badge, col){
+  return '<button class="msg-tile vo-keep" onclick="' + click + '"><span class="mt-ico" style="background:linear-gradient(135deg,' + col + ')">' + ico + '</span><span class="mt-t">' + title + '</span><span class="mt-s">' + sub + '</span>' + (badge ? '<span class="mt-b">' + badge + '</span>' : '') + '</button>';
+}
+(function(){ try{ const st = document.createElement('style'); st.textContent = '.msg-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:6px}.msg-tile{position:relative;text-align:left;display:flex;flex-direction:column;gap:6px;padding:18px;border:1px solid var(--line);background:#fff;border-radius:22px;cursor:pointer;font:inherit;color:inherit;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px rgba(15,23,42,.08);transition:transform .18s}.msg-tile:hover{transform:translateY(-3px)}.msg-tile .mt-ico{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}.msg-tile .mt-t{font-weight:700;font-size:16px}.msg-tile .mt-s{font-size:13px;opacity:.7}.msg-tile .mt-b{position:absolute;top:14px;right:14px;background:#dc2626;color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:3px 10px}.msg-back{margin-bottom:12px}.msg-pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px}.msg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}.msg-card{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff;display:flex;flex-direction:column;gap:6px}.msg-card .mc-n{font-weight:700}.msg-card .mc-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}'; document.head.appendChild(st); }catch(e){} })();
 function msgTab(k){ MSG_TAB = k; renderMessages(); }
-function msgGo(k){ MSG_TAB = k; showView('messages'); }
+function msgGo(k){ MSG_TAB = k; if (k === 'inbox') MSG_SEC = 'inbox'; showView('messages'); }
 function msgCanParents(){ const ct = ((getTeacherObj() || {}).allocations || []).some(a => a.subject === '*'); if (session.access) return session.access.has('messages-p') || ct; return session.role !== 'teacher' || ct; }
 function renderMessages(){
   const root = document.getElementById('msg-root'); if (!root) return;
@@ -3438,17 +3460,44 @@ function renderMessages(){
   const compose = '<div class="panel" id="msg-compose"><h3>New message</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><select id="msg-to" style="padding:8px;min-width:220px;">' + opts + '</select></div>'
     + '<textarea id="msg-text" rows="3" placeholder="Type your message..." style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;"></textarea>'
     + '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary vo-keep" onclick="msgCompose()">Send</button><button class="btn vo-keep" onclick="msgComposeBday()">Send a birthday wish instead</button></div><div id="msg-note" class="hint"></div></div>';
-  const rows = list.map(m => {
+  const rowOf = m => {
     const mine = m.from === me.id, unread = !mine && String(m.createdAt) > seenBefore;
     return '<div class="msg-row' + (unread ? ' unread' : '') + (m.kind === 'birthday' ? ' bday' : '') + '"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><strong>' + (mine ? 'You → ' + escapeHtml(m.toName || '') : escapeHtml(m.fromName || '') + (m.to === 'all' ? ' · to everyone' : m.to === 'teachers' ? ' · to all teachers' : '')) + '</strong><span class="hint" style="margin:0;">' + escapeHtml(fmtDateTime(m.createdAt)) + '</span></div><div style="margin-top:4px;white-space:pre-wrap;">' + escapeHtml(m.text) + '</div>' + (m.audio ? vcPlayerHtml(m.audio, m.secs) : '')
       + '<div style="margin-top:6px;display:flex;gap:8px;align-items:center;"><button class="like-btn' + ((m.likes || []).indexOf(me.id) >= 0 ? ' on' : '') + '" onclick="msgLike(\'' + m.id + '\')">' + ((m.likes || []).indexOf(me.id) >= 0 ? '❤️' : '🤍') + ' ' + ((m.likes || []).length || '') + '</button>' + (!mine ? '<button class="btn btn-sm vo-keep" onclick="msgReply(\'' + m.id + '\')">↩ Reply</button>' : '') + (isAdmin ? '<button class="btn btn-sm btn-danger" onclick="msgDelete(\'' + m.id + '\')">Delete</button>' : '') + '</div></div>';
-  }).join('');
-  const inbox = '<div class="panel"><h3 style="display:flex;align-items:center;gap:8px;">Messages sent &amp; received <button class="btn btn-sm btn-solid vo-keep" style="margin-left:auto;" onclick="msgJumpCompose()">+ New message</button></h3><div style="max-height:62vh;overflow:auto;">' + (rows || '<div class="empty-state">No messages yet.</div>') + '</div></div>';
-  const staff = isAdmin ? '<div class="panel"><h3>Staff: who has been active</h3><p class="hint">Messages wait for a teacher and appear the next time they open the app. For someone who has not been on, also nudge them by WhatsApp or SMS.</p><div id="msg-staff">Loading...</div></div>' : '';
-  root.innerHTML = tabs + inbox + compose + vcPanel() + staff;
-  try{ localStorage.setItem(msgSeenKey(), new Date().toISOString()); }catch(e){}
+  };
+  const unreadN = list.filter(m => m.from !== me.id && String(m.createdAt) > seenBefore).length;
+  const back = '<button class="btn msg-back vo-keep" onclick="msgSec(\'hub\')">&larr; Messages</button>';
+  if (MSG_SEC === 'staff' && !isAdmin) MSG_SEC = 'hub';
+  let body = '';
+  if (MSG_SEC === 'hub'){
+    body = '<div class="msg-tiles">'
+      + msgTile('&#128229;', 'Inbox', list.length ? list.length + ' message' + (list.length === 1 ? '' : 's') : 'No messages yet', "msgSec('inbox')", unreadN ? unreadN + ' new' : '', '#3b82f6,#60a5fa')
+      + msgTile('&#9999;&#65039;', 'New message', 'To one person, a department or everyone', "msgSec('new')", '', '#8b5cf6,#c084fc')
+      + msgTile('&#127908;', 'Voice message', HOSTED ? 'Record and send' : 'Needs the online connection', "msgSec('voice')", '', '#f59e0b,#fbbf24')
+      + (isAdmin ? msgTile('&#128101;', 'Staff activity', 'Who has been online', "msgSec('staff')", '', '#14b8a6,#5eead4') : '')
+      + msgTile('&#128276;', 'Alerts', 'Reach people when the app is closed', "msgSec('alerts')", '', '#ec4899,#f472b6')
+      + '</div>';
+  } else if (MSG_SEC === 'inbox'){
+    let L = list;
+    if (MSG_F === 'unread') L = L.filter(m => m.from !== me.id && String(m.createdAt) > seenBefore);
+    else if (MSG_F === 'sent') L = L.filter(m => m.from === me.id);
+    else if (MSG_F === 'recv') L = L.filter(m => m.from !== me.id);
+    const pages = Math.max(1, Math.ceil(L.length / MSG_PER)); MSG_PG = Math.min(MSG_PG, pages - 1);
+    const chip = (k, t) => '<button class="ac-tab vo-keep' + (MSG_F === k ? ' active' : '') + '" onclick="msgFilt(\'' + k + '\')">' + t + '</button>';
+    body = back + '<div class="panel"><h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">Inbox <button class="btn btn-sm btn-solid vo-keep" style="margin-left:auto;" onclick="msgSec(\'new\')">+ New message</button></h3>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' + chip('all', 'All') + chip('unread', 'New' + (unreadN ? ' (' + unreadN + ')' : '')) + chip('recv', 'Received') + chip('sent', 'Sent') + '</div>'
+      + (L.length ? L.slice(MSG_PG * MSG_PER, (MSG_PG + 1) * MSG_PER).map(rowOf).join('') : '<div class="empty-state">Nothing here.</div>')
+      + (pages > 1 ? '<div class="msg-pager"><button class="btn vo-keep" ' + (MSG_PG ? '' : 'disabled ') + 'onclick="msgPage(-1)">&lsaquo; Newer</button><span class="hint" style="margin:0;">Page ' + (MSG_PG + 1) + ' of ' + pages + '</span><button class="btn vo-keep" ' + (MSG_PG < pages - 1 ? '' : 'disabled ') + 'onclick="msgPage(1)">Older &rsaquo;</button></div>' : '') + '</div>';
+    try{ localStorage.setItem(msgSeenKey(), new Date().toISOString()); }catch(e){}
+  } else if (MSG_SEC === 'new'){ body = back + compose;
+  } else if (MSG_SEC === 'voice'){ body = back + vcPanel();
+  } else if (MSG_SEC === 'staff'){ body = back + '<div class="panel"><h3>Staff activity</h3><p class="hint">Messages wait for a teacher and appear the next time they open the app. For someone who has not been on, tap WhatsApp or SMS.</p><input type="text" id="sa-q" placeholder="Search staff..." value="' + escapeHtml(SA_Q) + '" oninput="SA_Q=this.value;SA_PG=0;msgStaffTable()" style="width:100%;max-width:360px;margin-bottom:10px;"><div id="msg-staff">Loading...</div></div>';
+  } else if (MSG_SEC === 'alerts'){ body = back + msgAlertsPanel();
+  }
+  root.innerHTML = tabs + body;
   setTimeout(msgBell, 50);
-  if (isAdmin) msgStaffTable();
+  if (MSG_SEC === 'staff') msgStaffTable();
+  if (MSG_SEC === 'alerts') msgAlertsLoad();
   msgRenderAlertBtn();
   vcAfterRender();
 }
@@ -3581,7 +3630,7 @@ async function vcSend(){
     if (aud === 'staff'){
       const r = await hostedCall({ action:'saveImage', dataUrl: du, name:'voice' }); if (!r || !r.ref) throw new Error('Upload failed');
       VCURLS[r.ref] = VC.url; VC.url = '';
-      msgSend(toKey, toName, '🎤 Voice message', 'message', null, null, { audio: r.ref, secs: Math.round(VC.secs) });
+      msgNotify(msgSend(toKey, toName, '🎤 Voice message', 'message', null, null, { audio: r.ref, secs: Math.round(VC.secs) }));
     } else {
       await hostedCall({ action:'voiceSend', dataUrl: du, toType: aud, toKey, toName, fromName: me.name, secs: Math.round(VC.secs) });
     }
@@ -3600,12 +3649,65 @@ async function vcDelSent(id){
   if (!confirm('Delete this voice message? Students will no longer be able to play it.')) return;
   try{ await hostedCall({ action:'voiceDelete', id }); vcLoadSent(); toast('Deleted.'); }catch(e){ toast('Could not delete.'); }
 }
-function msgJumpCompose(){ const c = document.getElementById('msg-compose'); if (c){ c.scrollIntoView({behavior:'smooth', block:'center'}); const t = document.getElementById('msg-text'); if (t) setTimeout(() => t.focus(), 350); } }
+/* ---------- Alerts for people who are not in the app: email and optional SMS, with a link that opens the app ---------- */
+const MSG_AL = { email: false, sms: false, link: '', quota: null, smsReady: false, loaded: false, old: false };
+function msgAlertsPanel(){
+  const me = msgMe(), isAdmin = me.kind === 'admin', t = getTeacherObj && getTeacherObj();
+  const myEmail = t && t.email ? t.email : '';
+  return '<div class="panel"><h3>&#128276; Alerts</h3><div class="msg-cards">'
+    + '<div class="msg-card"><div class="mc-n">On this device</div><span class="hint" style="margin:0;">Pop-up alerts while the app is open in a tab.</span><div class="mc-b"><button class="btn btn-sm btn-primary vo-keep" onclick="msgAskAlerts()">Turn on alerts</button></div></div>'
+    + '<div class="msg-card"><div class="mc-n">Your email</div><span class="hint" style="margin:0;">' + (myEmail ? 'Alerts for you go to ' + escapeHtml(myEmail) + '.' : 'No email on your profile yet. Add it in your profile so alerts can reach you.') + '</span></div>'
+    + (isAdmin ? '<div class="msg-card" id="al-box" style="grid-column:1/-1;">Loading...</div>' : '<div class="msg-card"><div class="mc-n">How it works</div><span class="hint" style="margin:0;">When someone sends you a message, the school emails you a link that opens the app. It reaches your phone whenever you have data, even if the app is closed.</span></div>')
+    + '</div></div>';
+}
+async function msgAlertsLoad(){
+  const box = document.getElementById('al-box'); if (!box) return;
+  try{ const r = await hostedCall({ action: 'alertGet' }); if (r && r.error) throw new Error('old'); Object.assign(MSG_AL, { email: !!r.email, sms: !!r.sms, link: r.link || '', quota: r.quota, smsReady: !!r.smsReady, loaded: true, old: false }); }
+  catch(e){ MSG_AL.old = true; }
+  msgAlertsFill();
+}
+function msgAlertsFill(){
+  const box = document.getElementById('al-box'); if (!box) return;
+  if (MSG_AL.old){ box.innerHTML = '<div class="mc-n">School alert settings</div><div class="gate-error">The school server needs the newest Code.gs for this (and one-time approval to send email).</div>'; return; }
+  const here = /^https:/.test(location.href) ? location.href.split('#')[0].split('?')[0] : '';
+  box.innerHTML = '<div class="mc-n">Alerts when the app is closed</div>'
+    + '<label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="al-email"' + (MSG_AL.email ? ' checked' : '') + '> Email staff when they get a message <span class="hint" style="margin:0;">(free' + (MSG_AL.quota != null ? ', ' + MSG_AL.quota + ' emails left today' : '') + ')</span></label>'
+    + '<label style="display:flex;gap:8px;align-items:center;margin-top:6px;"><input type="checkbox" id="al-sms"' + (MSG_AL.sms ? ' checked' : '') + (MSG_AL.smsReady ? '' : ' disabled') + '> Also send an SMS <span class="hint" style="margin:0;">' + (MSG_AL.smsReady ? '(uses your SMS gateway credit)' : '(connect the SMS gateway under Parents first)') + '</span></label>'
+    + '<div style="margin-top:8px;"><label class="hint" style="margin:0;">Link inside the alert (the page where staff open the app)</label><input type="text" id="al-link" value="' + escapeHtml(MSG_AL.link || here) + '" placeholder="https://..." style="width:100%;"></div>'
+    + '<div class="mc-b"><button class="btn btn-primary vo-keep" onclick="msgAlertsSave()">Save</button><input type="email" id="al-test" placeholder="Your email for a test" style="min-width:180px;"><button class="btn vo-keep" onclick="msgAlertsTest()">Send test alert</button></div><div id="al-note" class="hint"></div>'
+    + '<p class="hint">The email shows who sent the message and the first words, with a button that opens the app. A phone shows it like any email notification.</p>';
+}
+async function msgAlertsSave(){
+  const n = document.getElementById('al-note');
+  try{ const r = await hostedCall({ action: 'alertSet', email: document.getElementById('al-email').checked, sms: document.getElementById('al-sms').checked, link: document.getElementById('al-link').value.trim() }); if (r && r.error) throw new Error(r.error); MSG_AL.email = document.getElementById('al-email').checked; MSG_AL.sms = document.getElementById('al-sms').checked; n.textContent = 'Saved.'; }
+  catch(e){ n.textContent = 'Could not save: ' + (e.message || 'check your connection'); }
+}
+async function msgAlertsTest(){
+  const n = document.getElementById('al-note'), em = document.getElementById('al-test').value.trim();
+  if (!/^\S+@\S+\.\S+$/.test(em)){ n.textContent = 'Type your email first.'; return; }
+  try{ const r = await hostedCall({ action: 'alertTest', to: em, school: (DATA.meta || {}).schoolName || 'School', link: document.getElementById('al-link').value.trim() }); n.textContent = r && r.ok ? 'Test sent. Check your inbox.' : ((r && r.error) || 'Could not send.'); }
+  catch(e){ n.textContent = 'Could not send. Redeploy Code.gs and approve email sending first.'; }
+}
+function msgNotify(rec){
+  if (!HOSTED || !rec || rec.kind === 'birthday') return;
+  try{
+    const me = msgMe(), all = (DATA.teachers || []).filter(t => t.id !== me.id);
+    let who = [];
+    if (rec.to === 'all' || rec.to === 'teachers') who = all;
+    else if (typeof rec.to === 'string' && rec.to.indexOf('dept:') === 0){ try{ who = deptMembers(rec.to.slice(5)).filter(t => t.id !== me.id); }catch(e){} }
+    else who = all.filter(t => t.id === rec.to);
+    const emails = [...new Set(who.map(t => String(t.email || '').trim()).filter(e => /^\S+@\S+\.\S+$/.test(e)))], phones = [...new Set(who.map(t => tprofPhonesOf(t)[0]).filter(Boolean))];
+    if (!emails.length && !phones.length) return;
+    const link = /^https:/.test(location.href) ? location.href.split('#')[0].split('?')[0] : '';
+    hostedCall({ action: 'notifyMsg', from: me.name, school: (DATA.meta || {}).schoolName || 'School', preview: rec.audio ? 'Sent you a voice message.' : String(rec.text || '').slice(0, 100), emails, phones, link }).catch(() => {});
+  }catch(e){}
+}
+function msgJumpCompose(){ if (!document.getElementById('msg-compose')){ MSG_TAB = 'inbox'; MSG_SEC = 'new'; renderMessages(); } const t = document.getElementById('msg-text'); if (t) setTimeout(() => t.focus(), 150); }
 function msgReply(id){
   const m = (DATA.messages || []).find(x => x.id === id); if (!m) return;
   if (document.getElementById('msg-pop')) msgPopClose(true);
   const go = () => { const sel = document.getElementById('msg-to'); if (sel){ for (let i = 0; i < sel.options.length; i++) if (sel.options[i].value === m.from){ sel.selectedIndex = i; break; } } msgJumpCompose(); };
-  if (document.getElementById('msg-compose')) go(); else { MSG_TAB = 'inbox'; showView('messages'); setTimeout(go, 120); }
+  MSG_TAB = 'inbox'; MSG_SEC = 'new'; showView('messages'); setTimeout(go, 120);
 }
 let MSG_POP_HIDDEN = '';
 function msgPopClose(markRead){
@@ -3632,7 +3734,7 @@ function msgCompose(){
   const sel = document.getElementById('msg-to'), tx = document.getElementById('msg-text'); if (!sel || !tx) return;
   const to = sel.value, toName = sel.options[sel.selectedIndex].text.replace('Proprietor · ', '');
   if (!tx.value.trim()){ document.getElementById('msg-note').textContent = 'Type a message first.'; return; }
-  msgSend(to, toName, tx.value, 'message'); renderMessages();
+  const sent = msgSend(to, toName, tx.value, 'message'); msgNotify(sent); renderMessages(); MSG_SEC = 'new'; renderMessages();
   const n = document.getElementById('msg-note'); if (n) n.textContent = 'Sent. It reaches everyone the next time they open the app.';
 }
 function msgComposeBday(){
@@ -3651,21 +3753,22 @@ function msgDelete(id){
   if (!confirm('Delete this message for everyone?')) return;
   DATA.messages = (DATA.messages || []).filter(m => m.id !== id); queueTombstone('Messages', id); saveData(); renderMessages();
 }
-async function msgStaffTable(){
+async function msgStaffTable(force){
   const el = document.getElementById('msg-staff'); if (!el) return;
-  let users = [];
-  try{ if (HOSTED){ const r = await hostedCall({ action: 'presence' }); users = (r && r.users) || []; } }catch(e){}
-  const by = {}; users.forEach(u => { if (u.name) by[String(u.name).toLowerCase()] = u; });
-  const rows = (DATA.teachers || []).filter(t => !isProprietorRec(t)).map(t => {
-    const u = by[String(t.name).toLowerCase()], online = u && u.online;
-    const ph = tprofPhonesOf(t)[0] || '';
-    return '<tr><td><strong>' + escapeHtml(t.name) + '</strong></td><td>' + (online ? '<span class="status-badge status-paid">Online now</span>' : u ? 'Last seen ' + escapeHtml(agoText(u.lastSeen)) : '<span class="hint" style="margin:0;">Not seen in the last 24 hours</span>') + '</td><td>'
-      + '<button class="btn btn-sm" onclick="msgPrefill(\'' + t.id + '\')">Message</button> '
-      + (ph ? '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + waLink(ph, 'Hello ' + t.name.split(' ')[0] + ', please open the school app: there is a new message for you.') + '">WhatsApp</a> <a class="btn btn-sm" href="' + smsLink([ph], 'Hello ' + t.name.split(' ')[0] + ', please open the school app: there is a new message for you.') + '">SMS</a>' : '<span class="hint" style="margin:0;">no phone yet</span>') + '</td></tr>';
+  if (force || SA_USERS === null){ SA_USERS = []; try{ if (HOSTED){ const r = await hostedCall({ action: 'presence' }); SA_USERS = (r && r.users) || []; } }catch(e){} }
+  const by = {}; SA_USERS.forEach(u => { if (u.name) by[String(u.name).toLowerCase()] = u; });
+  const q = SA_Q.trim().toLowerCase();
+  const all = (DATA.teachers || []).filter(t => !isProprietorRec(t) && (!q || String(t.name).toLowerCase().indexOf(q) >= 0));
+  const per = 6, pages = Math.max(1, Math.ceil(all.length / per)); SA_PG = Math.min(SA_PG, pages - 1);
+  const cards = all.slice(SA_PG * per, (SA_PG + 1) * per).map(t => {
+    const u = by[String(t.name).toLowerCase()], online = u && u.online, ph = tprofPhonesOf(t)[0] || '', first = String(t.name).split(' ')[0];
+    return '<div class="msg-card"><div class="mc-n">' + escapeHtml(t.name) + '</div>' + (online ? '<span class="status-badge status-paid" style="align-self:flex-start;">Online now</span>' : u ? '<span class="hint" style="margin:0;">Last seen ' + escapeHtml(agoText(u.lastSeen)) + '</span>' : '<span class="hint" style="margin:0;">Not seen in the last 24 hours</span>')
+      + '<div class="mc-b"><button class="btn btn-sm vo-keep" onclick="msgPrefill(\'' + t.id + '\')">Message</button>'
+      + (ph ? '<a class="btn btn-sm" target="_blank" rel="noopener" href="' + waLink(ph, 'Hello ' + first + ', please open the school app: there is a new message for you.') + '">WhatsApp</a><a class="btn btn-sm" href="' + smsLink([ph], 'Hello ' + first + ', please open the school app: there is a new message for you.') + '">SMS</a>' : '<span class="hint" style="margin:0;">no phone yet</span>') + '</div></div>';
   }).join('');
-  el.innerHTML = rows ? '<div style="overflow-x:auto;"><table><thead><tr><th>Teacher</th><th>Status</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="empty-state">No teachers yet.</div>';
+  el.innerHTML = all.length ? '<div class="msg-cards">' + cards + '</div>' + (pages > 1 ? '<div class="msg-pager"><button class="btn vo-keep" ' + (SA_PG ? '' : 'disabled ') + 'onclick="SA_PG--;msgStaffTable()">&lsaquo; Back</button><span class="hint" style="margin:0;">Page ' + (SA_PG + 1) + ' of ' + pages + '</span><button class="btn vo-keep" ' + (SA_PG < pages - 1 ? '' : 'disabled ') + 'onclick="SA_PG++;msgStaffTable()">Next &rsaquo;</button></div>' : '') + '<div style="margin-top:8px;"><button class="btn btn-sm vo-keep" onclick="msgStaffTable(true)">Refresh</button></div>' : '<div class="empty-state">No teachers found.</div>';
 }
-function msgPrefill(tid){ const s = document.getElementById('msg-to'); if (s){ s.value = tid; const x = document.getElementById('msg-text'); x.focus(); x.scrollIntoView({ block: 'center' }); } }
+function msgPrefill(tid){ MSG_SEC = 'new'; renderMessages(); const s = document.getElementById('msg-to'); if (s){ s.value = tid; const x = document.getElementById('msg-text'); x.focus(); } }
 /* ---------- parents: SMS and WhatsApp ---------- */
 function intlPhone(p){
   let d = String(p || '').replace(/[^0-9+]/g, ''); if (!d) return '';
@@ -3673,6 +3776,8 @@ function intlPhone(p){
 }
 function waLink(phone, text){ return 'https://wa.me/' + intlPhone(phone) + '?text=' + encodeURIComponent(text || ''); }
 function smsLink(nums, text){ return 'sms:' + nums.map(n => '+' + intlPhone(n)).join(',') + '?&body=' + encodeURIComponent(text || ''); }
+let PAR_SEC = 'hub';
+function parSec(k){ PAR_SEC = k; parRender(); window.scrollTo(0, 0); }
 const PAR = { aud: 'all', cls: '', tpl: 'custom', text: '', sel: null, sent: {}, gw: null };
 const PAR_TPL = {
   custom: '',
@@ -3707,23 +3812,40 @@ async function parRender(){
   if (!PAR.sel) PAR.sel = new Set();
   const selIds = new Set([...PAR.sel].filter(id => withNum.some(s => s.id === id)));
   const isT = session.role === 'teacher';
-  root.innerHTML = '<div class="panel"><h3>Message parents</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'
-    + (isT ? '<span class="hint" style="margin:0;">Your class only</span>' : '<select onchange="PAR.aud=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="all"' + (PAR.aud === 'all' ? ' selected' : '') + '>All parents</option><option value="class"' + (PAR.aud === 'class' ? ' selected' : '') + '>One class</option><option value="owing"' + (PAR.aud === 'owing' ? ' selected' : '') + '>Parents owing fees</option></select>')
-    + (PAR.aud === 'class' && !isT ? '<select onchange="PAR.cls=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="">Choose class</option>' + classes.map(c => '<option' + (PAR.cls === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select>' : '')
-    + '<select onchange="parTpl(this.value)" style="padding:8px;"><option value="custom">Write my own</option><option value="fees"' + (PAR.tpl === 'fees' ? ' selected' : '') + '>Fees reminder</option><option value="reopen"' + (PAR.tpl === 'reopen' ? ' selected' : '') + '>Re-opening</option><option value="closing"' + (PAR.tpl === 'closing' ? ' selected' : '') + '>Vacation</option><option value="meeting"' + (PAR.tpl === 'meeting' ? ' selected' : '') + '>Parents\' meeting</option></select></div>'
-    + '<textarea id="par-text" rows="4" oninput="PAR.text=this.value" placeholder="Type the message. You can use {parent} {pupil} {class} {balance} {school}" style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;">' + escapeHtml(PAR.text) + '</textarea>'
-    + '<div class="hint">' + withNum.length + ' of ' + aud.length + ' pupils have a parent phone number. Pupils without one are left out. Tick who to send to below.</div>'
-    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button class="btn vo-keep" onclick="parSelAll(true)">Tick all</button><button class="btn vo-keep" onclick="parSelAll(false)">Untick all</button>'
-    + '<button class="btn btn-primary vo-keep" onclick="parBulkSms()">SMS app: ticked parents</button><button class="btn vo-keep" onclick="parWaNext()">WhatsApp: next parent</button>'
-    + '<button class="btn vo-keep" onclick="parCopy()">Copy numbers</button><button class="btn vo-keep" onclick="parCsv()">Download list</button>'
-    + (PAR.gw && PAR.gw.enabled ? '<button class="btn btn-primary vo-keep" onclick="parGateway()">Send with SMS gateway</button>' : '') + '</div><div id="par-note" class="hint"></div></div>'
-    + '<div class="panel"><div style="overflow-x:auto;"><table><thead><tr><th></th><th>Pupil</th><th>Class</th><th>Parent</th><th>Phone</th><th></th></tr></thead><tbody>'
-    + (aud.length ? aud.map(s => { const n = intlPhone(s.guardianPhone); return '<tr><td>' + (n ? '<input type="checkbox" ' + (PAR.sel.has(s.id) ? 'checked ' : '') + 'onchange="parTick(\'' + s.id + '\',this.checked)">' : '') + '</td><td>' + escapeHtml(s.name) + '</td><td>' + escapeHtml(s.class) + '</td><td>' + escapeHtml(s.guardianName || '') + '</td><td>' + (n ? escapeHtml(s.guardianPhone) : '<span class="hint" style="margin:0;">none</span>') + '</td><td style="white-space:nowrap;">'
-      + (n ? '<a class="btn btn-sm" target="_blank" rel="noopener" onclick="PAR.sent[\'' + s.id + '\']=1;this.textContent=\'WhatsApp ✓\'" href="#" data-s="' + s.id + '" data-k="wa">WhatsApp</a> <a class="btn btn-sm" href="#" data-s="' + s.id + '" data-k="sms">SMS</a>' : '') + '</td></tr>'; }).join('') : '<tr><td colspan="6"><div class="empty-state">No pupils in this group.</div></td></tr>')
-    + '</tbody></table></div></div>'
-    + (session.role === 'admin' ? parGwPanel() : '');
+  const audSel = (isT ? '<span class="hint" style="margin:0;">Your class only</span>' : '<select onchange="PAR.aud=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="all"' + (PAR.aud === 'all' ? ' selected' : '') + '>All parents</option><option value="class"' + (PAR.aud === 'class' ? ' selected' : '') + '>One class</option><option value="owing"' + (PAR.aud === 'owing' ? ' selected' : '') + '>Parents owing fees</option></select>')
+    + (PAR.aud === 'class' && !isT ? '<select onchange="PAR.cls=this.value;PAR.sel=null;parRender()" style="padding:8px;"><option value="">Choose class</option>' + classes.map(c => '<option' + (PAR.cls === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select>' : '');
+  const nSel = selIds.size, back = '<button class="btn msg-back vo-keep" onclick="parSec(\'hub\')">&larr; Parents</button>';
+  let html = '';
+  if (PAR_SEC === 'hub'){
+    html = '<div class="msg-tiles">'
+      + msgTile('&#9999;&#65039;', 'Write message', PAR.text ? 'Draft ready' : 'Compose the SMS or WhatsApp', "parSec('write')", '', '#8b5cf6,#c084fc')
+      + msgTile('&#128106;', 'Choose parents', nSel + ' chosen &middot; ' + withNum.length + ' with a phone', "parSec('pick')", nSel ? nSel + '' : '', '#3b82f6,#60a5fa')
+      + (session.role === 'admin' ? msgTile('&#9881;&#65039;', 'SMS gateway', PAR.gw && PAR.gw.enabled ? 'Connected' : 'Not connected', "parSec('gw')", '', '#475569,#94a3b8') : '')
+      + '</div>';
+  } else if (PAR_SEC === 'write'){
+    html = back + '<div class="panel"><h3>Write message</h3><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">' + audSel
+      + '<select onchange="parTpl(this.value)" style="padding:8px;"><option value="custom">Write my own</option><option value="fees"' + (PAR.tpl === 'fees' ? ' selected' : '') + '>Fees reminder</option><option value="reopen"' + (PAR.tpl === 'reopen' ? ' selected' : '') + '>Re-opening</option><option value="closing"' + (PAR.tpl === 'closing' ? ' selected' : '') + '>Vacation</option><option value="meeting"' + (PAR.tpl === 'meeting' ? ' selected' : '') + '>Parents\' meeting</option></select></div>'
+      + '<textarea id="par-text" rows="4" oninput="PAR.text=this.value" placeholder="Type the message. You can use {parent} {pupil} {class} {balance} {school}" style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;">' + escapeHtml(PAR.text) + '</textarea>'
+      + '<div class="hint">' + nSel + ' parent(s) chosen. ' + withNum.length + ' of ' + aud.length + ' pupils have a parent phone number.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"><button class="btn vo-keep" onclick="parSec(\'pick\')">Choose parents</button><button class="btn vo-keep" onclick="parSelAll(true)">Choose everyone</button>'
+      + '<button class="btn btn-primary vo-keep" onclick="parBulkSms()">SMS app: chosen parents</button><button class="btn vo-keep" onclick="parWaNext()">WhatsApp: next parent</button>'
+      + '<button class="btn vo-keep" onclick="parCopy()">Copy numbers</button><button class="btn vo-keep" onclick="parCsv()">Download list</button>'
+      + (PAR.gw && PAR.gw.enabled ? '<button class="btn btn-primary vo-keep" onclick="parGateway()">Send with SMS gateway</button>' : '') + '</div><div id="par-note" class="hint"></div></div>';
+  } else if (PAR_SEC === 'pick'){
+    const q = (PAR.q || '').trim().toLowerCase(), shown = aud.filter(s => !q || (s.name + ' ' + s.class + ' ' + (s.guardianName || '')).toLowerCase().indexOf(q) >= 0);
+    const per = 9, pages = Math.max(1, Math.ceil(shown.length / per)); PAR.pg = Math.min(PAR.pg || 0, pages - 1);
+    html = back + '<div class="panel"><h3>Choose parents <span class="hint" style="margin:0;">' + nSel + ' chosen</span></h3><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">' + audSel
+      + '<input type="text" id="par-q" placeholder="Search pupil, class or parent..." value="' + escapeHtml(PAR.q || '') + '" oninput="PAR.q=this.value;PAR.pg=0;PAR.focus=1;parRender()" style="flex:1;min-width:180px;"><button class="btn vo-keep" onclick="parSelAll(true)">Choose all</button><button class="btn vo-keep" onclick="parSelAll(false)">Clear</button><button class="btn btn-primary vo-keep" onclick="parSec(\'write\')">Write message &rarr;</button></div>'
+      + (shown.length ? '<div class="msg-cards">' + shown.slice(PAR.pg * per, (PAR.pg + 1) * per).map(s => { const n = intlPhone(s.guardianPhone); return '<div class="msg-card"><label style="display:flex;gap:8px;align-items:center;">' + (n ? '<input type="checkbox" ' + (PAR.sel.has(s.id) ? 'checked ' : '') + 'onchange="parTick(\'' + s.id + '\',this.checked)">' : '') + '<span class="mc-n">' + escapeHtml(s.name) + '</span></label><span class="hint" style="margin:0;">' + escapeHtml(s.class) + (s.guardianName ? ' &middot; ' + escapeHtml(s.guardianName) : '') + '</span><span class="hint" style="margin:0;">' + (n ? escapeHtml(s.guardianPhone) : 'no phone number') + '</span>'
+        + (n ? '<div class="mc-b"><a class="btn btn-sm" target="_blank" rel="noopener" onclick="PAR.sent[\'' + s.id + '\']=1;this.textContent=\'WhatsApp ✓\'" href="#" data-s="' + s.id + '" data-k="wa">WhatsApp</a><a class="btn btn-sm" href="#" data-s="' + s.id + '" data-k="sms">SMS</a></div>' : '') + '</div>'; }).join('') + '</div>'
+        + (pages > 1 ? '<div class="msg-pager"><button class="btn vo-keep" ' + (PAR.pg ? '' : 'disabled ') + 'onclick="PAR.pg--;parRender()">&lsaquo; Back</button><span class="hint" style="margin:0;">Page ' + (PAR.pg + 1) + ' of ' + pages + '</span><button class="btn vo-keep" ' + (PAR.pg < pages - 1 ? '' : 'disabled ') + 'onclick="PAR.pg++;parRender()">Next &rsaquo;</button></div>' : '') : '<div class="empty-state">No pupils in this group.</div>') + '</div>';
+  } else if (PAR_SEC === 'gw' && session.role === 'admin'){
+    html = back + parGwPanel().replace('<details', '<details open');
+  } else { PAR_SEC = 'hub'; return parRender(); }
+  root.innerHTML = html;
+  if (PAR.focus){ PAR.focus = 0; const qi = document.getElementById('par-q'); if (qi){ qi.focus(); try{ qi.setSelectionRange(qi.value.length, qi.value.length); }catch(e){} } }
   root.querySelectorAll('a[data-k]').forEach(a => {   // build the links at click time from the current message
-    a.addEventListener('click', ev => { const s = DATA.students.find(x => x.id === a.dataset.s); if (!s) return; const txt = parFill(document.getElementById('par-text').value, s); a.href = a.dataset.k === 'wa' ? waLink(s.guardianPhone, txt) : smsLink([s.guardianPhone], txt); });
+    a.addEventListener('click', ev => { const s = DATA.students.find(x => x.id === a.dataset.s); if (!s) return; const txt = parFill(PAR.text || '', s); a.href = a.dataset.k === 'wa' ? waLink(s.guardianPhone, txt) : smsLink([s.guardianPhone], txt); });
   });
 }
 function parGwPanel(){
@@ -8667,6 +8789,29 @@ function studentIdPrefix(){
   return (DATA.meta.idPrefix && DATA.meta.idPrefix.trim()) ? DATA.meta.idPrefix.trim().toUpperCase() : schoolAbbrInitials(DATA.meta.schoolName);
 }
 /* ---------- STAFF: teaching (from Teacher Accounts) + non-teaching, one list with IDs and positions ---------- */
+function posInUse(){ return nonTeachingList().map(o => String(o.position || '').trim()).filter(Boolean); }
+function posList(){ return Array.isArray(DATA.positionList) ? DATA.positionList : [...new Set(NON_TEACHING_POSITIONS.concat(posInUse()))].sort((a, b) => a.localeCompare(b)); }
+function posSave(list){ DATA.positionList = list; markMetaDirty('positionList'); saveData(); }
+function posRemember(p){ if (!p || p.length > 40 || !Array.isArray(DATA.positionList) || DATA.positionList.some(x => x.toLowerCase() === p.toLowerCase())) return; posSave(DATA.positionList.concat([p]).sort((a, b) => a.localeCompare(b))); }
+function posOpen(){ if (session.role !== 'admin') return; posDraw(); document.getElementById('pos-note').textContent = ''; document.getElementById('pos-overlay').classList.add('active'); }
+function posClose(){ document.getElementById('pos-overlay').classList.remove('active'); renderStaffView(); }
+function posDraw(){
+  const use = {}; posInUse().forEach(p => { use[p.toLowerCase()] = (use[p.toLowerCase()] || 0) + 1; });
+  document.getElementById('pos-chips').innerHTML = posList().map((p, i) => '<span style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 6px 6px 12px;background:var(--paper-2);">' + escapeHtml(p) + (use[p.toLowerCase()] ? ' <span class="hint" style="margin:0;">' + use[p.toLowerCase()] + '</span>' : '') + '<button class="btn btn-sm btn-danger vo-keep" style="padding:0 8px;border-radius:999px;" onclick="posRemove(' + i + ')" aria-label="Remove">&times;</button></span>').join('') || '<span class="hint">No positions yet. Add one below.</span>';
+}
+function posAdd(){
+  const inp = document.getElementById('pos-new'), v = inp.value.replace(/\s+/g, ' ').trim(), n = document.getElementById('pos-note');
+  if (!v) return; if (v.length > 40){ n.textContent = 'Keep it under 40 letters.'; return; }
+  const cur = posList(); if (cur.some(x => x.toLowerCase() === v.toLowerCase())){ n.textContent = 'That position is already in the list.'; return; }
+  posSave(cur.concat([v]).sort((a, b) => a.localeCompare(b))); inp.value = ''; n.textContent = ''; posDraw();
+}
+function posRemove(i){
+  const cur = posList().slice(), p = cur[i]; if (p === undefined) return;
+  const used = posInUse().filter(x => x.toLowerCase() === p.toLowerCase()).length;
+  if (used && !confirm(used + ' staff member(s) have "' + p + '". They keep it. It just leaves the list of choices. Remove it?')) return;
+  cur.splice(i, 1); posSave(cur); posDraw();
+}
+function posReset(){ if (!confirm('Go back to the suggested list (the usual positions plus any your staff already have)?')) return; DATA.positionList = null; posSave([...new Set(NON_TEACHING_POSITIONS.concat(posInUse()))].sort((a, b) => a.localeCompare(b))); posDraw(); }
 const NON_TEACHING_POSITIONS = ['Cook','Assistant Cook','Cleaner','Security Man','Driver','Secretary','Accountant','Bursar','Receptionist','Nurse','Librarian','Caretaker','Gardener','Laundry Staff'];
 function nonTeachingList(){ return DATA.staff || (DATA.staff = []); }
 function generateStaffId(rec){
@@ -8698,7 +8843,7 @@ function filteredStaffRows(){
 }
 function renderStaffView(){
   const dl = document.getElementById('staff-position-list');
-  if (dl) dl.innerHTML = NON_TEACHING_POSITIONS.map(x => `<option value="${escapeHtml(x)}">`).join('');
+  if (dl) dl.innerHTML = posList().map(x => `<option value="${escapeHtml(x)}">`).join('');
   const isAdmin = session.role === 'admin';
   let missing = false;
   nonTeachingList().forEach(o => { if (!o.idNumber){ o.idNumber = generateStaffId(o); missing = true; } });
@@ -8750,6 +8895,7 @@ function saveStaff(){
   if (session.role !== 'admin') return;
   const name = document.getElementById('staff-name').value.replace(/\s+/g, ' ').trim();
   const position = document.getElementById('staff-position').value.replace(/\s+/g, ' ').trim();
+  try{ posRemember(position); }catch(e){}
   const phone = document.getElementById('staff-phone').value.trim();
   const id = document.getElementById('staff-edit-id').value;
   const kind = document.getElementById('staff-edit-kind').value;
@@ -12436,7 +12582,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.15-a';
+const APP_VERSION = '2026.11.15-b';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
