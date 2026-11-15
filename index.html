@@ -1662,6 +1662,19 @@
         <div class="view-header">
           <div><h1 class="view-title">Settings</h1></div>
         </div>
+        <div class="panel admin-only" id="admin-profile-panel"><h3>My profile (admin)</h3>
+          <p class="hint">Your own details, so staff know who you are and alerts can reach you.</p>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+            <div style="width:96px;"><div id="ap-photo" style="width:96px;height:112px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-size:34px;">&#128100;</div>
+              <input type="file" id="ap-file" accept="image/*" style="display:none;" onchange="apPhoto(this)"><button class="btn btn-sm vo-keep" style="margin-top:6px;width:100%;" onclick="document.getElementById('ap-file').click()">Change picture</button><button class="btn btn-sm vo-keep" style="margin-top:4px;width:100%;" onclick="apRemovePhoto()">Remove</button></div>
+            <div style="flex:1;min-width:260px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+              <div class="field"><label>Full name</label><input type="text" id="ap-name" placeholder="Your name"></div>
+              <div class="field"><label>Title</label><input type="text" id="ap-title" placeholder="Administrator"></div>
+              <div class="field"><label>Email address</label><input type="email" id="ap-email" placeholder="name@example.com"></div>
+              <div class="field"><label>Phone number</label><input type="tel" id="ap-phone" placeholder="024 000 0000"></div>
+            </div>
+          </div>
+          <div style="margin-top:12px;"><button class="btn btn-primary" onclick="apSave()">Save my profile</button> <span id="ap-note" class="hint" style="margin:0;"></span></div></div>
         <div class="panel admin-only"><h3>Google Sheet health</h3>
           <p class="hint">Every detail the app keeps is shown as a column you can read and edit in Google Sheets. This check finds columns the app no longer uses. Before anything is removed its data is copied to a backup tab, so nothing useful is lost.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn" onclick="sheetHealth(false)">Check the sheet</button><button class="btn btn-primary" onclick="sheetHealth(true)">Remove unused columns</button></div>
@@ -2200,6 +2213,7 @@ function buildSyncMetaPayload(){
     departments: DATA.departments || null,
     dutyRoster: DATA.dutyRoster || null,
     positionList: DATA.positionList || null,
+    adminProfile: DATA.adminProfile || null,
     uiTheme: DATA.uiTheme || 'classic',
     loginFlyers: Array.isArray(DATA.loginFlyers) ? DATA.loginFlyers.filter(g => String(g.img || '').indexOf('data:') !== 0) : null,   // only pictures already on Drive travel
     sigGallery: (DATA.sigGallery || []).filter(g => String(g.img || '').indexOf('data:') !== 0)   // only pictures already on Drive travel in the shared settings
@@ -2236,6 +2250,7 @@ function applySyncMetaFromServer(serverMeta){
   if (newer('timetable') && serverMeta.timetable.value && serverMeta.timetable.value.schedules){ DATA.timetable = serverMeta.timetable.value; local.timetable = serverMeta.timetable.updatedAt; }
   if (newer('timetableResult') && serverMeta.timetableResult.value && serverMeta.timetableResult.value.grid){ DATA.timetableResult = serverMeta.timetableResult.value; local.timetableResult = serverMeta.timetableResult.updatedAt; }
   if (newer('departments') && serverMeta.departments.value && typeof serverMeta.departments.value === 'object'){ DATA.departments = serverMeta.departments.value; local.departments = serverMeta.departments.updatedAt; }
+  if (newer('adminProfile') && serverMeta.adminProfile.value && typeof serverMeta.adminProfile.value === 'object'){ DATA.adminProfile = serverMeta.adminProfile.value; local.adminProfile = serverMeta.adminProfile.updatedAt; }
   if (newer('positionList') && Array.isArray(serverMeta.positionList.value)){ DATA.positionList = serverMeta.positionList.value; local.positionList = serverMeta.positionList.updatedAt; }
   if (newer('dutyRoster') && serverMeta.dutyRoster.value && typeof serverMeta.dutyRoster.value === 'object'){ DATA.dutyRoster = serverMeta.dutyRoster.value; local.dutyRoster = serverMeta.dutyRoster.updatedAt; }
   if (newer('uiTheme') && typeof serverMeta.uiTheme.value === 'string'){ DATA.uiTheme = serverMeta.uiTheme.value; local.uiTheme = serverMeta.uiTheme.updatedAt; try{ applyTheme(DATA.uiTheme); }catch(e){} }
@@ -2941,7 +2956,7 @@ async function hostedBoot(){
           const r = await hostedCall({ action:'createSchool', schoolName: nm, adminPassword: DATA.auth.adminPassword, cashierPassword: DATA.auth.cashierPassword, logo: DATA.meta.logo || null });
           const now = new Date().toISOString();
           DATA.sync.metaUpdatedAt = DATA.sync.metaUpdatedAt || {};
-        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster','positionList'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
+        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster','positionList','adminProfile'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
           DATA.sync.pushedHashes = {}; DATA.sync.lastKnownServerIds = {}; DATA.sync.dirty = true;
           saveData();
         }
@@ -3304,7 +3319,7 @@ function msgMe(){
   if (session.role === 'teacher') return { id: session.teacherId, name: (getTeacherObj() || {}).name || 'Teacher', kind: 'teacher' };
   if (session.role === 'proprietor'){ const p = getProprietor(); return { id: (p && p.id) || 'proprietor', name: (p && p.name) || 'Proprietor', kind: 'proprietor' }; }
   if (session.role === 'cashier') return { id: 'cashier', name: 'Cashier', kind: 'cashier' };
-  return { id: 'admin', name: 'Admin', kind: 'admin' };
+  return { id: 'admin', name: ((DATA.adminProfile || {}).name || '').trim() || 'Admin', kind: 'admin' };
 }
 function msgVisible(m){
   const me = msgMe();
@@ -3653,7 +3668,7 @@ async function vcDelSent(id){
 const MSG_AL = { email: false, sms: false, link: '', quota: null, smsReady: false, loaded: false, old: false };
 function msgAlertsPanel(){
   const me = msgMe(), isAdmin = me.kind === 'admin', t = getTeacherObj && getTeacherObj();
-  const myEmail = t && t.email ? t.email : '';
+  const myEmail = isAdmin ? ((DATA.adminProfile || {}).email || '') : (t && t.email ? t.email : '');
   return '<div class="panel"><h3>&#128276; Alerts</h3><div class="msg-cards">'
     + '<div class="msg-card"><div class="mc-n">On this device</div><span class="hint" style="margin:0;">Pop-up alerts while the app is open in a tab.</span><div class="mc-b"><button class="btn btn-sm btn-primary vo-keep" onclick="msgAskAlerts()">Turn on alerts</button></div></div>'
     + '<div class="msg-card"><div class="mc-n">Your email</div><span class="hint" style="margin:0;">' + (myEmail ? 'Alerts for you go to ' + escapeHtml(myEmail) + '.' : 'No email on your profile yet. Add it in your profile so alerts can reach you.') + '</span></div>'
@@ -3696,6 +3711,8 @@ function msgNotify(rec){
     if (rec.to === 'all' || rec.to === 'teachers') who = all;
     else if (typeof rec.to === 'string' && rec.to.indexOf('dept:') === 0){ try{ who = deptMembers(rec.to.slice(5)).filter(t => t.id !== me.id); }catch(e){} }
     else who = all.filter(t => t.id === rec.to);
+    const ap = DATA.adminProfile || {}, adminTo = me.kind !== 'admin' && (rec.to === 'all' || rec.to === 'teachers' || rec.to === 'admin');
+    if (adminTo && ap.email) who = who.concat([{ email: ap.email, phones: ap.phone ? [ap.phone] : [], phone: ap.phone || '' }]);
     const emails = [...new Set(who.map(t => String(t.email || '').trim()).filter(e => /^\S+@\S+\.\S+$/.test(e)))], phones = [...new Set(who.map(t => tprofPhonesOf(t)[0]).filter(Boolean))];
     if (!emails.length && !phones.length) return;
     const link = /^https:/.test(location.href) ? location.href.split('#')[0].split('?')[0] : '';
@@ -5051,6 +5068,7 @@ function toggleSidebar(){
   document.getElementById('backdrop').classList.toggle('active');
 }
 function showView(name){
+  if (name === 'settings') SET_CUR = null;
   if (session.access && !accessAllows(name)){ toast('You do not have access to that page.'); return; }
   if (session.role === 'proprietor'){ if (PROP_VIEWS.indexOf(name) < 0) return; }
   else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess','schoolanalytics','departments','duty'].includes(name)) return;
@@ -12171,7 +12189,7 @@ const GJ_ACC_OPEN = {};
 function gjFold(){
   const v = document.querySelector('.view.active'); if (!v) return;
   const id = v.id.replace('view-', '');
-  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages', 'schoolanalytics', 'departments', 'duty'].includes(id)) return;
+  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages', 'schoolanalytics', 'departments', 'duty', 'settings'].includes(id)) return;
   const panels = [...v.querySelectorAll(':scope > .panel, :scope > div > .panel')].filter(p => p.firstElementChild && p.firstElementChild.tagName === 'H3');
   if (panels.length < 2) return;
   panels.forEach((p, i) => {
@@ -12582,7 +12600,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.15-b';
+const APP_VERSION = '2026.11.15-d';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -12676,7 +12694,47 @@ async function saDecide(id, ok){
   try{ await hostedCall({action:'updatesDecide', id, approve:ok}); toast(ok?'Approved — it will reach every device on the next sync.':'Rejected.'); loadParentUpdates(); if (ok){ try{ if (typeof performSync==='function') performSync(); }catch(e){} } }catch(e){ toast(e.message); }
 }
 
+/* ---------- Settings as cards: pick a section, see only that section ---------- */
+let SET_CUR = null;
+const SET_ICONS = [['My profile','&#128100;','#0ea5e9,#6366f1','My profile'],['Google Sheet','&#128202;','#16a34a,#4ade80','Sheet health'],['flyers','&#128444;&#65039;','#ec4899,#f472b6','Login flyers'],['Look','&#127912;','#8b5cf6,#c084fc','Look & feel'],['School details','&#127979;','#3b82f6,#60a5fa','School details'],['School logo','&#127991;&#65039;','#f59e0b,#fbbf24','School logo'],['passwords','&#128273;','#a855f7,#c084fc','Passwords'],['Data Storage','&#128190;','#0ea5e9,#38bdf8','Data storage'],['Online Sync','&#128260;','#14b8a6,#5eead4','Online sync'],['New Term','&#128197;','#f97316,#fb923c','Start new term'],['Term History','&#128344;','#6366f1,#818cf8','Term history'],['Promotion Path','&#129690;','#0d9488,#2dd4bf','Promotion path'],['Promote Students','&#127891;','#d946ef,#e879f9','Promote students'],['Danger','&#9888;&#65039;','#dc2626,#f87171','Danger zone']];
+function setPanels(){ const v = document.getElementById('view-settings'); return v ? [...v.children].filter(e => e.classList.contains('panel')) : []; }
+function setTitleOf(p){ const h = p.querySelector('h3'); return h ? h.textContent.trim() : 'Section'; }
+function setHubInit(){
+  const v = document.getElementById('view-settings'); if (!v) return;
+  let hub = document.getElementById('set-hub');
+  if (!hub){
+    hub = document.createElement('div'); hub.id = 'set-hub'; hub.className = 'msg-tiles'; v.querySelector('.view-header').after(hub);
+    const bk = document.createElement('button'); bk.id = 'set-back'; bk.type = 'button'; bk.className = 'btn msg-back vo-keep'; bk.style.display = 'none'; bk.innerHTML = '&larr; Settings'; bk.onclick = () => setHubShow(null); hub.after(bk);
+  }
+  const ps = setPanels();
+  hub.innerHTML = ps.map((p, i) => {
+    const t = setTitleOf(p), ic = SET_ICONS.find(x => t.toLowerCase().indexOf(x[0].toLowerCase()) >= 0) || ['', '&#9881;&#65039;', '#475569,#94a3b8', t];
+    const hint = p.querySelector('.hint'), sub = hint ? hint.textContent.trim().replace(/\s+/g, ' ').slice(0, 70) : '';
+    return '<button type="button" class="msg-tile vo-keep" onclick="setHubShow(' + i + ')"><span class="mt-ico" style="background:linear-gradient(135deg,' + ic[2] + ')">' + ic[1] + '</span><span class="mt-t">' + ic[3] + '</span><span class="mt-s">' + escapeHtml(sub) + '</span></button>';
+  }).join('');
+}
+function setHubShow(i){
+  SET_CUR = i;
+  const ps = setPanels(), hub = document.getElementById('set-hub'), bk = document.getElementById('set-back'); if (!hub) return;
+  ps.forEach((p, k) => { p.style.display = (i !== null && k === i) ? '' : 'none'; });
+  hub.style.display = i === null ? '' : 'none'; bk.style.display = i === null ? 'none' : '';
+  window.scrollTo(0, 0);
+}
+let apPhotoData = '';
+function apFill(){ const a = DATA.adminProfile || {}; const g = id => document.getElementById(id); if (!g('ap-name')) return; g('ap-name').value = a.name || ''; g('ap-title').value = a.title || ''; g('ap-email').value = a.email || ''; g('ap-phone').value = a.phone || ''; apPhotoData = a.photo || ''; apShowPhoto(); }
+function apShowPhoto(){ const b = document.getElementById('ap-photo'); if (b) b.innerHTML = apPhotoData ? '<img src="' + imgSrc(apPhotoData) + '" alt="" style="width:100%;height:100%;object-fit:cover;">' : '&#128100;'; }
+function apPhoto(inp){ const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return; compressImageToDataUrl(f, { maxDim: 240, quality: 0.7, mime: 'image/jpeg' }, d => { apPhotoData = d; apShowPhoto(); }); }
+function apRemovePhoto(){ apPhotoData = ''; apShowPhoto(); }
+function apSave(){
+  const g = id => document.getElementById(id).value.trim(), n = document.getElementById('ap-note');
+  const email = g('ap-email'), phone = g('ap-phone');
+  if (email && !/^\S+@\S+\.\S+$/.test(email)){ n.textContent = 'That email does not look right.'; return; }
+  DATA.adminProfile = { name: g('ap-name'), title: g('ap-title'), email, phone, photo: apPhotoData, updatedAt: new Date().toISOString() };
+  markMetaDirty('adminProfile'); saveData(); n.textContent = 'Saved.'; toast('Profile saved.');
+}
 function renderSettingsView(){
+  try{ apFill(); }catch(e){}
+  try{ setHubInit(); setHubShow(SET_CUR); setTimeout(() => { try{ setHubShow(SET_CUR); }catch(e){} }, 0); }catch(e){}
   const av=document.getElementById('app-version'); if(av) av.textContent=APP_VERSION;
   try{ renderThemeGallery(); }catch(e){}
   try{ renderFlyerAdmin(); }catch(e){}
