@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.18-a';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.18-b';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V)return;
@@ -3738,7 +3738,7 @@ function phCopy(){ const t = (document.getElementById('ph-topic') || {}).textCon
 async function phTest(){
   const n = document.getElementById('ph-note'); n.textContent = 'Sending...';
   try{ const r = await hostedCall({ action: 'pushTest', id: msgMe().id, school: (DATA.meta || {}).schoolName || 'School', link: /^https:/.test(location.href) ? location.href.split('#')[0].split('?')[0] : '' }); n.textContent = r && r.ok ? 'Sent. It should pop up on your phone in a few seconds (after you subscribed in ntfy).' : ((r && r.error) || 'Could not send.'); }
-  catch(e){ n.textContent = 'Could not send. Update Code.gs first.'; }
+  catch(e){ n.textContent = 'Could not send: ' + ((e && e.message) || 'no answer from the school server') + (/unknown|action/i.test((e && e.message) || '') ? ' (Update Code.gs first.)' : ''); }
 }
 function msgAlertsFill(){
   const box = document.getElementById('al-box'); if (!box) return;
@@ -12665,7 +12665,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.18-a';
+const APP_VERSION = '2026.11.18-b';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
