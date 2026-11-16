@@ -640,8 +640,22 @@
   .idd-diagonal.idc-land .ix-foot{clip-path:none;padding-top:8px;}
 
   /* landscape cards are short: tighten rows so every option fits */
-  .idd-classic.idc-land .idcard-body{padding:8px 10px 2px;}
-  .idd-classic.idc-land .idcard-name-box{margin-bottom:5px;padding:5px 8px;}
+  /* classic card: the middle may shrink and clip, never push the footer/motto out of the card */
+  .idd-classic .idcard-body{min-height:0;overflow:hidden;}
+  .idd-classic .idcard-footer{margin-top:auto;}
+  .idd-classic.idc-port .idcard-detail-row.small{font-size:8px;}
+  .idd-classic.idc-land .idcard-header{padding:7px 8px 6px;}
+  .idd-classic.idc-land .idcard-school1{font-size:19px;}
+  .idd-classic.idc-land .idcard-school2{font-size:11px;}
+  .idd-classic.idc-land .idcard-wave{height:9px;}
+  .idd-classic.idc-land .idcard-footer{padding:6px 6px;font-size:10px;}
+  .idd-classic.idc-land .idcard-photo-box{width:84px;height:104px;}
+  .idd-classic.idc-land .idcard-body{padding:6px 10px 2px;align-items:flex-start;}
+  .idd-classic.idc-land .idcard-detail-row{padding:1.5px 0;font-size:9.5px;}
+  .idd-classic.idc-land .idcard-detail-row.small{font-size:8.5px;}
+  .idd-classic.idc-land .idcard-icon{width:14px;height:14px;}
+  .idd-classic.idc-land .idcard-name{font-size:12px;}
+  .idd-classic.idc-land .idcard-name-box{margin-bottom:3px;padding:3px 8px;}
   .idd-classic.idc-land .idcard-detail-row{padding:2.5px 0;}
   .ix.idc-land .ix-rows .idcard-detail-row{padding:1px 0;margin-top:0;}
   .idd-minimal.idc-land .ix-s1{font-size:16px;}
@@ -1662,6 +1676,13 @@
         <div class="view-header">
           <div><h1 class="view-title">Settings</h1></div>
         </div>
+        <div class="panel admin-only" id="admins-panel" data-main-only="1"><h3>Admins</h3>
+          <p class="hint">Give each admin their own password and profile, so you can tell who did what. They sign in on the same login page with the Admin button and their own password.</p>
+          <div id="admins-list" class="msg-cards" style="margin:10px 0;"></div>
+          <h3 style="font-size:14px;margin-top:14px;">Add an admin</h3>
+          <div class="grid-2"><div class="field"><label>Full name</label><input type="text" id="na-name"></div><div class="field"><label>Email</label><input type="email" id="na-email"></div>
+            <div class="field"><label>Phone</label><input type="tel" id="na-phone"></div><div class="field"><label>Password (6+ characters)</label><input type="text" id="na-pass" autocomplete="off"></div></div>
+          <div style="margin-top:10px;"><button class="btn btn-primary" onclick="adminAdd()">Add admin</button> <span id="na-note" class="hint" style="margin:0;"></span></div></div>
         <div class="panel admin-only" id="admin-profile-panel"><h3>My profile (admin)</h3>
           <p class="hint">Your own details, so staff know who you are and alerts can reach you.</p>
           <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
@@ -1672,6 +1693,7 @@
               <div class="field"><label>Title</label><input type="text" id="ap-title" placeholder="Administrator"></div>
               <div class="field"><label>Email address</label><input type="email" id="ap-email" placeholder="name@example.com"></div>
               <div class="field"><label>Phone number</label><input type="tel" id="ap-phone" placeholder="024 000 0000"></div>
+              <div class="field" id="ap-pass-wrap" style="display:none;"><label>New password (leave empty to keep)</label><input type="text" id="ap-pass" autocomplete="off"></div>
             </div>
           </div>
           <div style="margin-top:12px;"><button class="btn btn-primary" onclick="apSave()">Save my profile</button> <span id="ap-note" class="hint" style="margin:0;"></span></div></div>
@@ -1705,7 +1727,7 @@
           <input type="file" id="settings-logo" accept="image/*" onchange="handleLogoUpload(this, 'settings')">
           <div style="margin-top:10px;"><button class="btn btn-danger btn-sm" onclick="removeLogo()">Remove logo</button></div>
         </div>
-        <div class="panel">
+        <div class="panel" data-main-only="1">
           <h3>Change passwords</h3>
           <div class="grid-2">
             <div class="field"><label>New admin password</label><input type="password" id="settings-admin-pass" placeholder="Leave blank to keep current"></div>
@@ -1776,7 +1798,7 @@
           <button class="btn btn-gold" onclick="promoteAllStudents()">Promote Students Now</button>
           <p class="hint" id="promote-feedback"></p>
         </div>
-        <div class="panel">
+        <div class="panel" data-main-only="1">
           <h3>Danger zone</h3>
           <p class="hint">Erases every student, payment and setting on this device. Export a backup first if you're not sure.</p>
           <button class="btn btn-danger" onclick="if(confirm('This deletes everything on this device permanently. Continue?'))resetApp();">Erase everything and start over</button>
@@ -2219,6 +2241,7 @@ function buildSyncMetaPayload(){
     sigGallery: (DATA.sigGallery || []).filter(g => String(g.img || '').indexOf('data:') !== 0)   // only pictures already on Drive travel in the shared settings
   };
   // In hosted (shared-link) mode, admin/cashier passwords travel with the ledger so Admin/Cashier can log in on any device.
+  if (DATA.sync.hosted && Array.isArray(DATA.admins)) metaValues.admins = DATA.admins;
   if (DATA.sync.hosted && DATA.auth) metaValues.auth = { adminPassword: DATA.auth.adminPassword, cashierPassword: DATA.auth.cashierPassword };
   const payload = {};
   Object.keys(metaValues).forEach(k => {
@@ -2242,6 +2265,7 @@ function applySyncMetaFromServer(serverMeta){
   if (newer('academicSettings')){ DATA.academic.settings = serverMeta.academicSettings.value; local.academicSettings = serverMeta.academicSettings.updatedAt; }
   if (newer('promotionPath')){ DATA.promotionPath = serverMeta.promotionPath.value; local.promotionPath = serverMeta.promotionPath.updatedAt; }
   if (newer('customSubjects')){ DATA.customSubjects = serverMeta.customSubjects.value; local.customSubjects = serverMeta.customSubjects.updatedAt; }
+  if (DATA.sync.hosted && newer('admins') && Array.isArray(serverMeta.admins.value)){ DATA.admins = serverMeta.admins.value; local.admins = serverMeta.admins.updatedAt; }
   if (DATA.sync.hosted && newer('auth') && serverMeta.auth.value){ DATA.auth = serverMeta.auth.value; local.auth = serverMeta.auth.updatedAt; }
   if (newer('mockList') && Array.isArray(serverMeta.mockList.value)){ DATA.mockList = serverMeta.mockList.value; local.mockList = serverMeta.mockList.updatedAt; }
   if (newer('mockGrading')){ DATA.mockGrading = serverMeta.mockGrading.value || null; local.mockGrading = serverMeta.mockGrading.updatedAt; }
@@ -2956,7 +2980,7 @@ async function hostedBoot(){
           const r = await hostedCall({ action:'createSchool', schoolName: nm, adminPassword: DATA.auth.adminPassword, cashierPassword: DATA.auth.cashierPassword, logo: DATA.meta.logo || null });
           const now = new Date().toISOString();
           DATA.sync.metaUpdatedAt = DATA.sync.metaUpdatedAt || {};
-        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster','positionList','adminProfile'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
+        ['feeSchedule','admissionAmount','feedingRate','schoolMeta','academicSettings','promotionPath','customSubjects','idCardSettings','auth','mockList','mockGrading','staff','timetable','timetableResult','uiTheme','sigGallery','loginFlyers','departments','dutyRoster','positionList','adminProfile','admins'].forEach(k => { DATA.sync.metaUpdatedAt[k] = now; });
           DATA.sync.pushedHashes = {}; DATA.sync.lastKnownServerIds = {}; DATA.sync.dirty = true;
           saveData();
         }
@@ -3011,6 +3035,7 @@ window.addEventListener('DOMContentLoaded', async function(){
     const savedRole = sess.getItem('sfa_role');
     if (savedRole){
       session.role = savedRole;
+      if (savedRole === 'admin' && !sess.getItem('sfa_assist')) session.adminId = sess.getItem('sfa_admin') || null;
       if (sess.getItem('sfa_assist')) session.assistant = true;
       if (sess.getItem('sfa_cashier')) session.cashierX = true;
       if (sess.getItem('sfa_staff')) session.staffId = sess.getItem('sfa_staff');
@@ -3225,7 +3250,7 @@ function presenceLabel(){
   if (session.role === 'proprietor'){ const p = getProprietor(); return (p && p.name) || 'Proprietor'; }
   if (session.cashierX) return 'Cashier';
   if (session.role === 'teacher' || session.assistant){ const t = getTeacherObj(); return (t && t.name) || 'Teacher'; }
-  return session.role === 'cashier' ? 'Cashier' : 'Admin';
+  return session.role === 'cashier' ? 'Cashier' : (String(curAdminProfile().name || '').trim() || 'Admin');
 }
 async function presencePing(kind){
   try {
@@ -3319,11 +3344,13 @@ function msgMe(){
   if (session.role === 'teacher') return { id: session.teacherId, name: (getTeacherObj() || {}).name || 'Teacher', kind: 'teacher' };
   if (session.role === 'proprietor'){ const p = getProprietor(); return { id: (p && p.id) || 'proprietor', name: (p && p.name) || 'Proprietor', kind: 'proprietor' }; }
   if (session.role === 'cashier') return { id: 'cashier', name: 'Cashier', kind: 'cashier' };
-  return { id: 'admin', name: ((DATA.adminProfile || {}).name || '').trim() || 'Admin', kind: 'admin' };
+  const ar = curAdminRec();
+  return { id: ar ? 'admin:' + ar.id : 'admin', name: String(curAdminProfile().name || '').trim() || 'Admin', kind: 'admin' };
 }
 function msgVisible(m){
   const me = msgMe();
   if (m.from === me.id || m.to === 'all' || m.to === me.id) return true;
+  if (m.to === 'admin' && me.kind === 'admin') return true;
   if (m.to === 'teachers' && (me.kind === 'teacher' || me.kind === 'proprietor' || me.kind === 'admin')) return true;
   if (typeof m.to === 'string' && m.to.indexOf('dept:') === 0){ if (me.kind === 'admin' || me.kind === 'proprietor') return true; try{ return deptMembers(m.to.slice(5)).some(t => t.id === me.id); }catch(e){ return false; } }
   return false;
@@ -3349,7 +3376,9 @@ function msgRecipients(){
   else out.push(['all', 'Everyone (all staff)']);
   DEPTS.forEach(d => out.push(['dept:' + d.id, d.name + ' department']));
   out.push(['dept:duty', 'Teachers on duty this week']);
-  if (me.kind !== 'admin') out.push(['admin', 'Admin']);
+  if (me.kind !== 'admin') out.push(['admin', (DATA.admins || []).length ? 'All admins' : 'Admin']);
+  else if (session.adminId) out.push(['admin', ((DATA.adminProfile || {}).name || '').trim() || 'Main admin']);
+  (DATA.admins || []).filter(a => 'admin:' + a.id !== me.id).forEach(a => out.push(['admin:' + a.id, (a.name || 'Admin') + (me.kind === 'admin' ? ' (admin)' : ' (admin)')]));
   if (me.kind !== 'cashier') out.push(['cashier', 'Cashier']);
   (DATA.teachers || []).filter(t => t.id !== me.id).forEach(t => out.push([t.id, (isProprietorRec(t) ? 'Proprietor · ' : '') + t.name]));
   return out;
@@ -3668,7 +3697,7 @@ async function vcDelSent(id){
 const MSG_AL = { email: false, sms: false, link: '', quota: null, smsReady: false, loaded: false, old: false };
 function msgAlertsPanel(){
   const me = msgMe(), isAdmin = me.kind === 'admin', t = getTeacherObj && getTeacherObj();
-  const myEmail = isAdmin ? ((DATA.adminProfile || {}).email || '') : (t && t.email ? t.email : '');
+  const myEmail = isAdmin ? (curAdminProfile().email || '') : (t && t.email ? t.email : '');
   return '<div class="panel"><h3>&#128276; Alerts</h3><div class="msg-cards">'
     + '<div class="msg-card"><div class="mc-n">On this device</div><span class="hint" style="margin:0;">Pop-up alerts while the app is open in a tab.</span><div class="mc-b"><button class="btn btn-sm btn-primary vo-keep" onclick="msgAskAlerts()">Turn on alerts</button></div></div>'
     + '<div class="msg-card"><div class="mc-n">Your email</div><span class="hint" style="margin:0;">' + (myEmail ? 'Alerts for you go to ' + escapeHtml(myEmail) + '.' : 'No email on your profile yet. Add it in your profile so alerts can reach you.') + '</span></div>'
@@ -3709,10 +3738,12 @@ function msgNotify(rec){
     const me = msgMe(), all = (DATA.teachers || []).filter(t => t.id !== me.id);
     let who = [];
     if (rec.to === 'all' || rec.to === 'teachers') who = all;
+    else if (typeof rec.to === 'string' && rec.to.indexOf('admin') === 0) who = [];
     else if (typeof rec.to === 'string' && rec.to.indexOf('dept:') === 0){ try{ who = deptMembers(rec.to.slice(5)).filter(t => t.id !== me.id); }catch(e){} }
     else who = all.filter(t => t.id === rec.to);
-    const ap = DATA.adminProfile || {}, adminTo = me.kind !== 'admin' && (rec.to === 'all' || rec.to === 'teachers' || rec.to === 'admin');
-    if (adminTo && ap.email) who = who.concat([{ email: ap.email, phones: ap.phone ? [ap.phone] : [], phone: ap.phone || '' }]);
+    const adminsAll = [{ id: 'admin', email: (DATA.adminProfile || {}).email, phone: (DATA.adminProfile || {}).phone }].concat((DATA.admins || []).map(a => ({ id: 'admin:' + a.id, email: a.email, phone: a.phone })));
+    const adminTo = (rec.to === 'all' || rec.to === 'teachers' || rec.to === 'admin') ? adminsAll : adminsAll.filter(a => a.id === rec.to);
+    adminTo.filter(a => a.id !== me.id && a.email).forEach(a => { who = who.concat([{ email: a.email, phones: a.phone ? [a.phone] : [], phone: a.phone || '' }]); });
     const emails = [...new Set(who.map(t => String(t.email || '').trim()).filter(e => /^\S+@\S+\.\S+$/.test(e)))], phones = [...new Set(who.map(t => tprofPhonesOf(t)[0]).filter(Boolean))];
     if (!emails.length && !phones.length) return;
     const link = /^https:/.test(location.href) ? location.href.split('#')[0].split('?')[0] : '';
@@ -4968,8 +4999,8 @@ function doLogout(){
   document.body.classList.remove('viewonly');
   loginTeacherPicked = false; selectedLoginTeacherId = null;
   { const lu = document.getElementById('login-user'); if (lu) lu.value = ''; }
-  session.role = null; session.assistant = false; session.teacherId = null; session.staffId = null; session.cashierX = false; session.access = null;
-  sess.removeItem('sfa_role'); sess.removeItem('sfa_assist'); sess.removeItem('sfa_cashier'); sess.removeItem('sfa_staff');
+  session.role = null; session.adminId = null; session.assistant = false; session.teacherId = null; session.staffId = null; session.cashierX = false; session.access = null;
+  sess.removeItem('sfa_admin'); sess.removeItem('sfa_role'); sess.removeItem('sfa_assist'); sess.removeItem('sfa_cashier'); sess.removeItem('sfa_staff');
   { const ph = document.getElementById('topbar-photo'); if (ph) ph.style.display = 'none'; const pb = document.getElementById('topbar-profile-btn'); if (pb) pb.style.display = 'none'; }
   document.getElementById('app').style.display = 'none';
   document.getElementById('gate-login').style.display = 'flex';
@@ -5204,7 +5235,7 @@ function renderDashboard(){
   let rows = recent.map(p => {
     const s = DATA.students.find(x=>x.id===p.studentId);
     return `<tr><td>${s ? escapeHtml(s.name) : '(deleted student)'}</td><td>${s ? escapeHtml(s.class):''}</td>
-      <td class="num-cell">${fmtMoney(p.amount)}</td><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.recordedBy||'')}</td></tr>`;
+      <td class="num-cell">${fmtMoney(p.amount)}</td><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.byName||p.recordedBy||'')}</td></tr>`;
   }).join('');
   document.getElementById('dash-recent').innerHTML =
     `<table><thead><tr><th>Student</th><th>Class</th><th>Amount</th><th>Date</th><th>By</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -7385,7 +7416,7 @@ function submitPayment(){
   if (!receipt){ receipt = String(DATA.nextReceiptNo).padStart(6,'0'); DATA.nextReceiptNo++; }
   DATA.payments.push({
     id: uid(), studentId: selectedPayStudentId, amount, date, receiptNo: receipt,
-    recordedBy: (session.cashierX ? 'cashier' : session.role), timestamp: new Date().toISOString()
+    recordedBy: (session.cashierX ? 'cashier' : session.role), byName: payerName(), timestamp: new Date().toISOString()
   });
   saveData();
   const s = DATA.students.find(x=>x.id===selectedPayStudentId);
@@ -7413,7 +7444,7 @@ function renderPaymentsLog(){
   const rows = list.slice(0,200).map(p => {
     const s = DATA.students.find(x=>x.id===p.studentId);
     return `<tr><td>${p.receiptNo}</td><td>${s? escapeHtml(s.name):'(deleted)'}</td><td>${s?escapeHtml(s.class):''}</td>
-      <td class="num-cell">${fmtMoney(p.amount)}</td><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.recordedBy||'')}</td>
+      <td class="num-cell">${fmtMoney(p.amount)}</td><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.byName||p.recordedBy||'')}</td>
       <td class="admin-only" style="white-space:nowrap;"><button class="btn btn-sm" onclick="payEditOpen('tuition','${p.id}')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePayment('${p.id}')">Delete</button></td></tr>`;
   }).join('');
   document.getElementById('payments-log-wrap').innerHTML =
@@ -7477,9 +7508,9 @@ function payEditSave(){
   if (studentId === rec.studentId && amount === +rec.amount && date === (rec.date || '').slice(0,10) && receipt === String(rec.receiptNo || '')){ payEditClose(); return; }
   const dup = [DATA.payments, DATA.registries.admission.payments, DATA.registries.feeding.payments].some(a => a.some(p => p.id !== id && String(p.receiptNo) === receipt));
   if (dup && !confirm('Another payment already uses receipt number ' + receipt + '. Save anyway?')) return;
-  rec.edits = (rec.edits || []).concat([{ at: new Date().toISOString(), by: session.role, was: { studentId: rec.studentId, amount: rec.amount, date: rec.date, receiptNo: rec.receiptNo } }]).slice(-5);
+  rec.edits = (rec.edits || []).concat([{ at: new Date().toISOString(), by: payerName(), was: { studentId: rec.studentId, amount: rec.amount, date: rec.date, receiptNo: rec.receiptNo } }]).slice(-5);
   rec.studentId = studentId; rec.amount = amount; rec.date = date; rec.receiptNo = receipt;
-  rec.editedBy = session.role; rec.updatedAt = new Date().toISOString();
+  rec.editedBy = payerName(); rec.updatedAt = new Date().toISOString();
   saveData();
   const sid = rec.studentId;
   payEditClose();
@@ -7612,7 +7643,7 @@ function submitAdmissionPayment(){
   if (!date){ fb.textContent = 'Enter a date.'; return; }
   let receipt = document.getElementById('admf-pay-receipt').value.trim();
   if (!receipt){ receipt = String(DATA.nextReceiptNo).padStart(6,'0'); DATA.nextReceiptNo++; }
-  DATA.registries.admission.payments.push({id:uid(), studentId, amount, date, receiptNo:receipt, recordedBy:(session.cashierX ? 'cashier' : session.role), timestamp:new Date().toISOString()});
+  DATA.registries.admission.payments.push({id:uid(), studentId, amount, date, receiptNo:receipt, recordedBy:(session.cashierX ? 'cashier' : session.role), byName: payerName(), timestamp:new Date().toISOString()});
   saveData();
   const s = DATA.students.find(x=>x.id===studentId);
   fb.innerHTML = `<strong style="color:var(--green);">Recorded.</strong> ${escapeHtml(s.name)}'s new admission fee balance: ${fmtMoney(admissionBalance(studentId))}.`;
@@ -7762,7 +7793,7 @@ function feedRosterPay(studentId){
   if (!amount || amount<=0){ toast('Enter an amount greater than zero.'); return; }
   const date = document.getElementById('feed-roster-date').value || todayStr();
   let receipt = String(DATA.nextReceiptNo).padStart(6,'0'); DATA.nextReceiptNo++;
-  DATA.registries.feeding.payments.push({id:uid(), studentId, amount, date, receiptNo:receipt, recordedBy:(session.cashierX ? 'cashier' : session.role), timestamp:new Date().toISOString()});
+  DATA.registries.feeding.payments.push({id:uid(), studentId, amount, date, receiptNo:receipt, recordedBy:(session.cashierX ? 'cashier' : session.role), byName: payerName(), timestamp:new Date().toISOString()});
   saveData();
   const s = DATA.students.find(x=>x.id===studentId);
   toast(`Recorded ${fmtMoney(amount)} from ${s.name}. New balance: ${fmtMoney(feedingBalance(studentId))}.`);
@@ -12600,7 +12631,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.15-d';
+const APP_VERSION = '2026.11.16-b';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -12696,7 +12727,7 @@ async function saDecide(id, ok){
 
 /* ---------- Settings as cards: pick a section, see only that section ---------- */
 let SET_CUR = null;
-const SET_ICONS = [['My profile','&#128100;','#0ea5e9,#6366f1','My profile'],['Google Sheet','&#128202;','#16a34a,#4ade80','Sheet health'],['flyers','&#128444;&#65039;','#ec4899,#f472b6','Login flyers'],['Look','&#127912;','#8b5cf6,#c084fc','Look & feel'],['School details','&#127979;','#3b82f6,#60a5fa','School details'],['School logo','&#127991;&#65039;','#f59e0b,#fbbf24','School logo'],['passwords','&#128273;','#a855f7,#c084fc','Passwords'],['Data Storage','&#128190;','#0ea5e9,#38bdf8','Data storage'],['Online Sync','&#128260;','#14b8a6,#5eead4','Online sync'],['New Term','&#128197;','#f97316,#fb923c','Start new term'],['Term History','&#128344;','#6366f1,#818cf8','Term history'],['Promotion Path','&#129690;','#0d9488,#2dd4bf','Promotion path'],['Promote Students','&#127891;','#d946ef,#e879f9','Promote students'],['Danger','&#9888;&#65039;','#dc2626,#f87171','Danger zone']];
+const SET_ICONS = [['Admins','&#128737;&#65039;','#7c3aed,#a78bfa','Admins'],['My profile','&#128100;','#0ea5e9,#6366f1','My profile'],['Google Sheet','&#128202;','#16a34a,#4ade80','Sheet health'],['flyers','&#128444;&#65039;','#ec4899,#f472b6','Login flyers'],['Look','&#127912;','#8b5cf6,#c084fc','Look & feel'],['School details','&#127979;','#3b82f6,#60a5fa','School details'],['School logo','&#127991;&#65039;','#f59e0b,#fbbf24','School logo'],['passwords','&#128273;','#a855f7,#c084fc','Passwords'],['Data Storage','&#128190;','#0ea5e9,#38bdf8','Data storage'],['Online Sync','&#128260;','#14b8a6,#5eead4','Online sync'],['New Term','&#128197;','#f97316,#fb923c','Start new term'],['Term History','&#128344;','#6366f1,#818cf8','Term history'],['Promotion Path','&#129690;','#0d9488,#2dd4bf','Promotion path'],['Promote Students','&#127891;','#d946ef,#e879f9','Promote students'],['Danger','&#9888;&#65039;','#dc2626,#f87171','Danger zone']];
 function setPanels(){ const v = document.getElementById('view-settings'); return v ? [...v.children].filter(e => e.classList.contains('panel')) : []; }
 function setTitleOf(p){ const h = p.querySelector('h3'); return h ? h.textContent.trim() : 'Section'; }
 function setHubInit(){
@@ -12708,6 +12739,7 @@ function setHubInit(){
   }
   const ps = setPanels();
   hub.innerHTML = ps.map((p, i) => {
+    if (p.dataset.mainOnly && !isMainAdmin()) return '';
     const t = setTitleOf(p), ic = SET_ICONS.find(x => t.toLowerCase().indexOf(x[0].toLowerCase()) >= 0) || ['', '&#9881;&#65039;', '#475569,#94a3b8', t];
     const hint = p.querySelector('.hint'), sub = hint ? hint.textContent.trim().replace(/\s+/g, ' ').slice(0, 70) : '';
     return '<button type="button" class="msg-tile vo-keep" onclick="setHubShow(' + i + ')"><span class="mt-ico" style="background:linear-gradient(135deg,' + ic[2] + ')">' + ic[1] + '</span><span class="mt-t">' + ic[3] + '</span><span class="mt-s">' + escapeHtml(sub) + '</span></button>';
@@ -12720,20 +12752,59 @@ function setHubShow(i){
   hub.style.display = i === null ? '' : 'none'; bk.style.display = i === null ? 'none' : '';
   window.scrollTo(0, 0);
 }
+function curAdminRec(){ return session.adminId ? (DATA.admins || []).find(a => a.id === session.adminId) || null : null; }
+function curAdminProfile(){ return curAdminRec() || DATA.adminProfile || {}; }
+function isMainAdmin(){ return session.role === 'admin' && !session.assistant && !session.adminId; }
+function payerName(){ if (session.cashierX || session.role !== 'admin') return ''; return String(curAdminProfile().name || '').trim(); }
 let apPhotoData = '';
-function apFill(){ const a = DATA.adminProfile || {}; const g = id => document.getElementById(id); if (!g('ap-name')) return; g('ap-name').value = a.name || ''; g('ap-title').value = a.title || ''; g('ap-email').value = a.email || ''; g('ap-phone').value = a.phone || ''; apPhotoData = a.photo || ''; apShowPhoto(); }
+function apFill(){ const a = curAdminProfile(), g = id => document.getElementById(id); if (!g('ap-name')) return; g('ap-name').value = a.name || ''; g('ap-title').value = a.title || ''; g('ap-email').value = a.email || ''; g('ap-phone').value = a.phone || ''; g('ap-pass').value = ''; g('ap-pass-wrap').style.display = session.adminId ? '' : 'none'; apPhotoData = a.photo || ''; apShowPhoto(); }
 function apShowPhoto(){ const b = document.getElementById('ap-photo'); if (b) b.innerHTML = apPhotoData ? '<img src="' + imgSrc(apPhotoData) + '" alt="" style="width:100%;height:100%;object-fit:cover;">' : '&#128100;'; }
 function apPhoto(inp){ const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return; compressImageToDataUrl(f, { maxDim: 240, quality: 0.7, mime: 'image/jpeg' }, d => { apPhotoData = d; apShowPhoto(); }); }
 function apRemovePhoto(){ apPhotoData = ''; apShowPhoto(); }
+function adminPassTaken(p, exceptId){ return p === DATA.auth.adminPassword || p === DATA.auth.cashierPassword || (DATA.admins || []).some(a => a.id !== exceptId && a.password === p); }
 function apSave(){
   const g = id => document.getElementById(id).value.trim(), n = document.getElementById('ap-note');
   const email = g('ap-email'), phone = g('ap-phone');
   if (email && !/^\S+@\S+\.\S+$/.test(email)){ n.textContent = 'That email does not look right.'; return; }
-  DATA.adminProfile = { name: g('ap-name'), title: g('ap-title'), email, phone, photo: apPhotoData, updatedAt: new Date().toISOString() };
-  markMetaDirty('adminProfile'); saveData(); n.textContent = 'Saved.'; toast('Profile saved.');
+  const rec = curAdminRec(), fields = { name: g('ap-name'), title: g('ap-title'), email, phone, photo: apPhotoData, updatedAt: new Date().toISOString() };
+  if (rec){
+    const np = document.getElementById('ap-pass').value.trim();
+    if (np){ if (np.length < 6){ n.textContent = 'The password needs at least 6 characters.'; return; } if (adminPassTaken(np, rec.id)){ n.textContent = 'That password is already used by someone else. Choose another.'; return; } fields.password = np; }
+    Object.assign(rec, fields); markMetaDirty('admins');
+  } else { DATA.adminProfile = fields; markMetaDirty('adminProfile'); }
+  saveData(); n.textContent = 'Saved.'; toast('Profile saved.'); if (rec) document.getElementById('ap-pass').value = '';
+}
+function adminsDraw(){
+  const el = document.getElementById('admins-list'); if (!el) return;
+  const m = DATA.adminProfile || {};
+  el.innerHTML = '<div class="msg-card"><div class="mc-n">' + escapeHtml(m.name || 'Main admin') + '</div><span class="hint" style="margin:0;">Main admin' + (m.email ? ' &middot; ' + escapeHtml(m.email) : '') + '</span><span class="hint" style="margin:0;">Uses the admin password under Passwords.</span></div>'
+    + (DATA.admins || []).map(a => '<div class="msg-card"><div class="mc-n">' + escapeHtml(a.name || 'Admin') + '</div><span class="hint" style="margin:0;">' + escapeHtml(a.title || 'Admin') + (a.email ? ' &middot; ' + escapeHtml(a.email) : '') + (a.phone ? ' &middot; ' + escapeHtml(a.phone) : '') + '</span><div class="mc-b"><button class="btn btn-sm vo-keep" onclick="adminResetPw(\'' + a.id + '\')">Reset password</button><button class="btn btn-sm btn-danger vo-keep" onclick="adminRemove(\'' + a.id + '\')">Remove</button></div></div>').join('');
+}
+function adminAdd(){
+  if (!isMainAdmin()) return;
+  const g = id => document.getElementById(id).value.trim(), n = document.getElementById('na-note');
+  const name = g('na-name'), email = g('na-email'), phone = g('na-phone'), pw = g('na-pass');
+  if (!name){ n.textContent = 'Enter the admin\'s name.'; return; }
+  if (email && !/^\S+@\S+\.\S+$/.test(email)){ n.textContent = 'That email does not look right.'; return; }
+  if (pw.length < 6){ n.textContent = 'The password needs at least 6 characters.'; return; }
+  if (adminPassTaken(pw, null)){ n.textContent = 'That password is already used by someone else. Choose another.'; return; }
+  DATA.admins = (DATA.admins || []).concat([{ id: uid(), name, title: 'Administrator', email, phone, photo: '', password: pw, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]);
+  markMetaDirty('admins'); saveData(); ['na-name','na-email','na-phone','na-pass'].forEach(i => document.getElementById(i).value = '');
+  n.textContent = 'Added. Tell ' + name.split(' ')[0] + ' to use the Admin button with this password.'; adminsDraw();
+}
+function adminResetPw(id){
+  if (!isMainAdmin()) return; const a = (DATA.admins || []).find(x => x.id === id); if (!a) return;
+  const np = (prompt('New password for ' + a.name + ' (6+ characters):') || '').trim(); if (!np) return;
+  if (np.length < 6){ toast('At least 6 characters.'); return; } if (adminPassTaken(np, id)){ toast('That password is already used. Choose another.'); return; }
+  a.password = np; a.updatedAt = new Date().toISOString(); markMetaDirty('admins'); saveData(); toast('Password changed.');
+}
+function adminRemove(id){
+  if (!isMainAdmin()) return; const a = (DATA.admins || []).find(x => x.id === id); if (!a) return;
+  if (!confirm('Remove ' + a.name + ' as an admin? They will no longer be able to sign in.')) return;
+  DATA.admins = DATA.admins.filter(x => x.id !== id); markMetaDirty('admins'); saveData(); adminsDraw(); toast('Admin removed.');
 }
 function renderSettingsView(){
-  try{ apFill(); }catch(e){}
+  try{ apFill(); adminsDraw(); }catch(e){}
   try{ setHubInit(); setHubShow(SET_CUR); setTimeout(() => { try{ setHubShow(SET_CUR); }catch(e){} }, 0); }catch(e){}
   const av=document.getElementById('app-version'); if(av) av.textContent=APP_VERSION;
   try{ renderThemeGallery(); }catch(e){}
@@ -12878,6 +12949,7 @@ function saveSchoolName(){
 function savePasswords(){
   const ap = document.getElementById('settings-admin-pass').value;
   const cp = document.getElementById('settings-cashier-pass').value;
+  if (ap && (DATA.admins || []).some(a => a.password === ap)){ toast('A co-admin already uses that password. Choose another.'); return; }
   if (ap) DATA.auth.adminPassword = ap;
   if (cp) DATA.auth.cashierPassword = cp;
   markMetaDirty('auth');
@@ -13998,7 +14070,13 @@ function doLogin(){
     else if (pass !== rr.password) return bad('Incorrect password.');
     return accessStart({ kind: isStaff ? 'staff' : 'teacher', rec: rr });
   }
-  if (pass !== DATA.auth.adminPassword) return bad('Incorrect password.');
+  let admId = null;
+  if (pass !== DATA.auth.adminPassword){
+    const co = (DATA.admins || []).find(a => a.password && a.password === pass);
+    if (!co) return bad('Incorrect password.');
+    admId = co.id;
+  }
+  session.adminId = admId; if (admId) sess.setItem('sfa_admin', admId); else sess.removeItem('sfa_admin');
   session.teacherId = null; session.staffId = null; session.assistant = false; session.cashierX = false; session.access = null;
   ['sfa_teacher_id','sfa_staff','sfa_assist','sfa_cashier'].forEach(k => sess.removeItem(k));
   session.role = 'admin'; sess.setItem('sfa_role', 'admin');
