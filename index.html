@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.19-b';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.19-c';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V)return;
@@ -386,6 +386,7 @@ var t=/<title>([^<]*)<\/title>/.exec(h);if(t)document.title=t[1];var de=document
   .ex-day{background:var(--card,#fff);border:1px solid var(--line,#e2e2e2);border-radius:18px;padding:12px;} .ex-day.past{opacity:.6;}
   .ex-dh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
   .ex-meta{display:grid;gap:6px;margin-bottom:8px;} .ex-meta input,.ex-day select{width:100%;box-sizing:border-box;}
+.ex-ses{border-top:2px solid var(--line,#ddd);padding-top:8px;margin-top:8px;} .ex-dh + .ex-ses{border-top:0;margin-top:0;padding-top:0;} .ex-sh{font-weight:900;font-size:13px;margin-bottom:6px;color:var(--accent,#2b4acb);}
   .ex-dept{border-top:1px dashed var(--line,#ddd);padding:7px 0 2px;display:grid;gap:5px;}
   .ex-dn{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.4px;opacity:.75;}
   .ex-nm{padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.05);font-weight:700;} .ex-nm.me{background:#fde68a;color:#3a2c00;}
@@ -12727,7 +12728,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.19-b';
+const APP_VERSION = '2026.11.19-c';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -14672,7 +14673,16 @@ function an2SchoolBody(items){
 }
 
 /* ================================================================ DEPARTMENTS */
-const DEPTS = [ { id:'pre', name:'Pre-school', re:/^(creche|nursery|kg)/i }, { id:'pri', name:'Primary', re:/^primary/i }, { id:'jhs', name:'JHS', re:/^jhs/i } ];
+/* Which department a class belongs to. Works on any spelling: Creche/C, Nursery 2/N2, KG 1/KG1, Primary 4/P4, Basic 4/B4, JHS 1/J1/Basic 7/B7. */
+function deptOfClass(raw){
+  const s = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); let m;
+  if (/^(C|CRECHE|PLAYGROUP|PRESCHOOL|N\d*|NURSERY\d*|KG\d*|KINDERGARTEN\d*)$/.test(s)) return 'pre';
+  if (/^(J|JHS)\d*$/.test(s)) return 'jhs';
+  if ((m = s.match(/^(?:B|BASIC|CLASS|GRADE)(\d+)$/))) return +m[1] >= 7 ? 'jhs' : (+m[1] >= 1 ? 'pri' : '');
+  if (/^(P|PRY|PRIMARY)\d*$/.test(s)) return 'pri';
+  return '';
+}
+const DEPTS = [ { id:'pre', name:'Pre-school', re:{ test:c => deptOfClass(c) === 'pre' } }, { id:'pri', name:'Primary', re:{ test:c => deptOfClass(c) === 'pri' } }, { id:'jhs', name:'JHS', re:{ test:c => deptOfClass(c) === 'jhs' } } ];
 function deptCfg(id){ DATA.departments = DATA.departments || {}; return DATA.departments[id] = DATA.departments[id] || { add: [], remove: [], head: '' }; }
 function deptPeople(){ return (DATA.teachers || []).filter(t => !isProprietorRec(t)); }
 function deptAllocClass(a){ let c = String(a.class || ''); try{ c = canonicalizeClassName(c) || c; }catch(e){} return c; }
@@ -14986,7 +14996,14 @@ function houseRespread(){ if (!confirm('Give every student, teacher and worker a
 
 /* ================================================================ EXAM INVIGILATION TIMETABLE */
 const EX = { tab:'plan', wk:'', who:'' };
-function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.perDept = r.perDept || 2; r.exclude = r.exclude || []; r.days = r.days || []; return r; }
+const EXS = [{ id:'am', name:'Morning', ph:'8:00 - 10:00' }, { id:'pm', name:'Afternoon', ph:'1:00 - 3:00' }];
+function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.perDept = r.perDept || 2; r.exclude = r.exclude || []; r.days = r.days || []; r.days.forEach(exFix); return r; }
+function exFix(d){
+  if (!d.am){ d.am = { pre: d.pre || [], pri: d.pri || [], jhs: d.jhs || [], label: d.label || '', time: d.time || '' }; delete d.pre; delete d.pri; delete d.jhs; delete d.label; delete d.time; }
+  if (!d.pm) d.pm = { pre: [], pri: [], jhs: [], label: '', time: '' };
+  EXS.forEach(s => DEPTS.forEach(x => { d[s.id][x.id] = d[s.id][x.id] || []; }));
+  return d;
+}
 function exSave(){ markMetaDirty('examDuty'); saveData(); }
 function exDayName(iso){ return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(iso + 'T00:00:00').getDay()]; }
 function exLoad(tid, iso){
@@ -15002,23 +15019,28 @@ function exOk(t, iso){ return (exR().exclude || []).indexOf(t.id) < 0 && exAwayM
 function exPool(deptId, iso){ return deptMembers(deptId).filter(t => exOk(t, iso)); }
 function exName(id){ const t = (DATA.teachers || []).find(x => x.id === id); return t ? t.name : '—'; }
 function exSorted(){ return exR().days.slice().sort((a, b) => a.date.localeCompare(b.date)); }
+/* Each session (Morning / Afternoon) of each day: every department gets its own teachers (from the department list built from the timetable allocations). */
 function exGenerate(keepManual){
   const R = exR(), days = exSorted(), cnt = {}, last = {}; let prev = '';
-  days.forEach(d => { d.pre = d.pre || []; d.pri = d.pri || []; d.jhs = d.jhs || []; });
-  days.forEach(d => { if (keepManual && d.manual) DEPTS.forEach(x => (d[x.id] || []).forEach(id => { cnt[id] = (cnt[id] || 0) + 1; last[id] = d.date; })); });
-  let short = 0;
+  days.forEach(d => { if (keepManual && d.manual) EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => { cnt[id] = (cnt[id] || 0) + 1; last[id] = d.date; }))); });
+  const shortList = {};
   days.forEach(d => {
     if (keepManual && d.manual){ prev = d.date; return; }
-    const used = new Set(), all = deptPeople().filter(t => exOk(t, d.date));
-    DEPTS.forEach(x => { d[x.id] = []; });
-    const order = DEPTS.map(x => ({ id: x.id, pool: exPool(x.id, d.date) })).sort((a, b) => a.pool.length - b.pool.length);
-    const best = list => list.filter(t => !used.has(t.id)).sort((a, b) => (cnt[a.id] || 0) - (cnt[b.id] || 0) || ((last[a.id] === prev) ? 1 : 0) - ((last[b.id] === prev) ? 1 : 0) || exLoad(a.id, d.date) - exLoad(b.id, d.date) || String(last[a.id] || '').localeCompare(String(last[b.id] || '')) || String(a.name).localeCompare(String(b.name)))[0];
-    order.forEach(o => { for (let i = 0; i < R.perDept; i++){ const t = best(o.pool) || best(all); if (!t){ short++; continue; } d[o.id].push(t.id); used.add(t.id); cnt[t.id] = (cnt[t.id] || 0) + 1; last[t.id] = d.date; } });
+    const today = {};
+    EXS.forEach(s => {
+      const used = new Set();
+      DEPTS.forEach(x => { d[s.id][x.id] = []; });
+      const order = DEPTS.map(x => ({ id: x.id, name: x.name, pool: exPool(x.id, d.date) })).sort((p, q) => p.pool.length - q.pool.length);
+      const best = list => list.filter(t => !used.has(t.id)).sort((p, q) => (cnt[p.id] || 0) - (cnt[q.id] || 0) || (today[p.id] || 0) - (today[q.id] || 0) || ((last[p.id] === prev) ? 1 : 0) - ((last[q.id] === prev) ? 1 : 0) || exLoad(p.id, d.date) - exLoad(q.id, d.date) || String(last[p.id] || '').localeCompare(String(last[q.id] || '')) || String(p.name).localeCompare(String(q.name)))[0];
+      order.forEach(o => { for (let i = 0; i < R.perDept; i++){ const t = best(o.pool); if (!t){ shortList[o.name] = 1; continue; } d[s.id][o.id].push(t.id); used.add(t.id); today[t.id] = (today[t.id] || 0) + 1; cnt[t.id] = (cnt[t.id] || 0) + 1; last[t.id] = d.date; } });
+    });
     d.manual = false; prev = d.date;
   });
-  return short;
+  exGenerate.short = Object.keys(shortList);
+  return exGenerate.short.length;
 }
-function exTally(){ const c = {}; exR().days.forEach(d => DEPTS.forEach(x => (d[x.id] || []).forEach(id => { c[id] = (c[id] || 0) + 1; }))); return c; }
+function exShortMsg(){ const s = exGenerate.short || []; return s.length ? ' Not enough teachers in: ' + s.join(', ') + ' (add teachers to that department).' : ''; }
+function exTally(){ const c = {}; exR().days.forEach(d => EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => { c[id] = (c[id] || 0) + 1; })))); return c; }
 function exWeeks(){ const m = {}; exR().days.forEach(d => { const k = dutyMonday(new Date(d.date + 'T00:00:00')); (m[k] = m[k] || []).push(d); }); return Object.keys(m).sort().map(k => ({ start: k, days: m[k].sort((a, b) => a.date.localeCompare(b.date)) })); }
 function exTab(t){ EX.tab = t; renderExamDuty(); }
 function renderExamDuty(){
@@ -15034,15 +15056,19 @@ function renderExamDuty(){
   root.innerHTML = h;
 }
 function exFmt(iso){ return new Date(iso + 'T00:00:00').toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }); }
+function exSesHtml(d, s, isAdm, R){
+  const o = d[s.id];
+  return '<div class="ex-ses"><div class="ex-sh">' + s.name + '</div>'
+    + (isAdm ? '<div class="ex-meta"><input type="text" placeholder="Exam (optional)" value="' + escapeHtml(o.label || '') + '" onchange="exField(\'' + d.date + '\',\'' + s.id + '\',\'label\',this.value)"><input type="text" placeholder="Time, e.g. ' + s.ph + '" value="' + escapeHtml(o.time || '') + '" onchange="exField(\'' + d.date + '\',\'' + s.id + '\',\'time\',this.value)"></div>' : ((o.label || o.time) ? '<div class="hint" style="margin:0 0 6px;">' + escapeHtml([o.label, o.time].filter(Boolean).join(' · ')) + '</div>' : ''))
+    + DEPTS.map(x => '<div class="ex-dept"><div class="ex-dn">' + escapeHtml(x.name) + '</div>' + Array.from({ length: R.perDept }, (_, i) => { const cur = (o[x.id] || [])[i] || ''; return isAdm ? '<select onchange="exSet(\'' + d.date + '\',\'' + s.id + '\',\'' + x.id + '\',' + i + ',this.value)">' + exOpts(x.id, d.date, cur) + '</select>' : '<div class="ex-nm' + (cur === (session.teacherId || '#') ? ' me' : '') + '">' + escapeHtml(cur ? exName(cur) : '—') + '</div>'; }).join('') + '</div>').join('') + '</div>';
+}
 function exPlanHtml(isAdm){
   const R = exR(), wks = exWeeks();
   if (!wks.length) return '<div class="panel"><div class="empty-state">No exam days yet.' + (isAdm ? ' Open <b>Set up</b>, choose the Monday the exams start and press <b>Add exam days</b>.' : '') + '</div></div>';
   let wi = wks.findIndex(w => w.start === EX.wk); if (wi < 0){ const today = dutyMonday(new Date()); wi = Math.max(0, wks.findIndex(w => w.start >= today)); if (wi < 0) wi = wks.length - 1; EX.wk = wks[wi].start; }
   const w = wks[wi];
   let h = '<div class="hs-pager" style="justify-content:space-between;margin:0 0 8px;"><button class="btn btn-sm" ' + (wi ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi - 1] || {}).start + '\';renderExamDuty()">‹ Earlier</button><b>Week of ' + dutyFmt(w.start) + '</b><button class="btn btn-sm" ' + (wi < wks.length - 1 ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi + 1] || {}).start + '\';renderExamDuty()">Later ›</button></div>';
-  h += '<div class="ex-days">' + w.days.map(d => '<div class="ex-day"><div class="ex-dh"><b>' + exFmt(d.date) + '</b>' + (isAdm ? '<button class="btn btn-sm" title="Remove this day" onclick="exDelDay(\'' + d.date + '\')">×</button>' : '') + '</div>'
-    + (isAdm ? '<div class="ex-meta"><input type="text" placeholder="Exam that day (optional)" value="' + escapeHtml(d.label || '') + '" onchange="exField(\'' + d.date + '\',\'label\',this.value)"><input type="text" placeholder="Time, e.g. 8:00 - 12:00" value="' + escapeHtml(d.time || '') + '" onchange="exField(\'' + d.date + '\',\'time\',this.value)"></div>' : ((d.label || d.time) ? '<div class="hint" style="margin:0 0 6px;">' + escapeHtml([d.label, d.time].filter(Boolean).join(' · ')) + '</div>' : ''))
-    + DEPTS.map(x => '<div class="ex-dept"><div class="ex-dn">' + escapeHtml(x.name) + '</div>' + Array.from({ length: R.perDept }, (_, i) => { const cur = (d[x.id] || [])[i] || ''; return isAdm ? '<select onchange="exSet(\'' + d.date + '\',\'' + x.id + '\',' + i + ',this.value)">' + exOpts(x.id, d.date, cur) + '</select>' : '<div class="ex-nm' + (cur === (session.teacherId || '#') ? ' me' : '') + '">' + escapeHtml(cur ? exName(cur) : '—') + '</div>'; }).join('') + '</div>').join('') + '</div>').join('') + '</div>';
+  h += '<div class="ex-days">' + w.days.map(d => '<div class="ex-day"><div class="ex-dh"><b>' + exFmt(d.date) + '</b>' + (isAdm ? '<button class="btn btn-sm" title="Remove this day" onclick="exDelDay(\'' + d.date + '\')">×</button>' : '') + '</div>' + EXS.map(s => exSesHtml(d, s, isAdm, R)).join('') + '</div>').join('') + '</div>';
   return h;
 }
 function exOpts(deptId, iso, cur){
@@ -15051,23 +15077,28 @@ function exOpts(deptId, iso, cur){
   const o = t => '<option value="' + t.id + '"' + (t.id === cur ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>';
   return '<option value="">— none —</option>' + a.map(o).join('') + (b.length ? '<optgroup label="Other departments">' + b.map(o).join('') + '</optgroup>' : '');
 }
+function exMineList(tid){
+  const out = [];
+  exSorted().forEach(d => EXS.forEach(s => { const dp = DEPTS.find(x => (d[s.id][x.id] || []).indexOf(tid) >= 0); if (dp) out.push({ d, s, dp, o: d[s.id] }); }));
+  return out;
+}
 function exMineHtml(isAdm){
-  const R = exR(); let tid = session && session.teacherId || '';
+  let tid = session && session.teacherId || '';
   if (isAdm){ const ppl = deptPeople().slice().sort(dutyByName); if (!EX.who && ppl[0]) EX.who = ppl[0].id; tid = EX.who; }
   let h = isAdm ? '<div class="hs-lh"><select onchange="EX.who=this.value;renderExamDuty()">' + deptPeople().slice().sort(dutyByName).map(t => '<option value="' + t.id + '"' + (t.id === tid ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>').join('') + '</select></div>' : '';
-  const mine = exSorted().map(d => { const dp = DEPTS.find(x => (d[x.id] || []).indexOf(tid) >= 0); return dp ? { d, dp } : null; }).filter(Boolean);
-  if (!mine.length) return h + '<div class="panel"><div class="empty-state">' + (isAdm ? 'This teacher has no invigilation days.' : 'You have no invigilation days yet.') + '</div></div>';
+  const mine = exMineList(tid);
+  if (!mine.length) return h + '<div class="panel"><div class="empty-state">' + (isAdm ? 'This teacher has no invigilation duty.' : 'You have no invigilation duty yet.') + '</div></div>';
   const today = dutyISO(new Date());
-  return h + '<div class="ex-days">' + mine.map(m => '<div class="ex-day' + (m.d.date < today ? ' past' : '') + '"><div class="ex-dh"><b>' + exFmt(m.d.date) + '</b></div><div class="ex-dn">Invigilate: ' + escapeHtml(m.dp.name) + '</div>' + ((m.d.label || m.d.time) ? '<div class="hint" style="margin:4px 0 0;">' + escapeHtml([m.d.label, m.d.time].filter(Boolean).join(' · ')) + '</div>' : '') + '<div class="hint" style="margin:6px 0 0;">With: ' + escapeHtml((m.d[m.dp.id] || []).filter(x => x !== tid).map(exName).join(', ') || 'no one else') + '</div></div>').join('') + '</div>';
+  return h + '<div class="ex-days">' + mine.map(m => '<div class="ex-day' + (m.d.date < today ? ' past' : '') + '"><div class="ex-dh"><b>' + exFmt(m.d.date) + ' · ' + m.s.name + '</b></div><div class="ex-dn">Invigilate: ' + escapeHtml(m.dp.name) + '</div>' + ((m.o.label || m.o.time) ? '<div class="hint" style="margin:4px 0 0;">' + escapeHtml([m.o.label, m.o.time].filter(Boolean).join(' · ')) + '</div>' : '') + '<div class="hint" style="margin:6px 0 0;">With: ' + escapeHtml((m.o[m.dp.id] || []).filter(x => x !== tid).map(exName).join(', ') || 'no one else') + '</div></div>').join('') + '</div>';
 }
 function exFairHtml(){
   const c = exTally(), ppl = deptPeople().slice().sort((a, b) => (c[b.id] || 0) - (c[a.id] || 0) || dutyByName(a, b)), max = Math.max(1, ...ppl.map(t => c[t.id] || 0)), days = exR().days.length;
   if (!days) return '<div class="panel"><div class="empty-state">Add exam days first.</div></div>';
-  return '<div class="panel"><h3 style="margin-top:0;">Days on duty per teacher (' + days + ' exam days)</h3><div class="ex-fair">' + ppl.map(t => '<div class="ex-fr"><span>' + escapeHtml(t.name) + '</span><span class="ex-bar"><i style="width:' + Math.round((c[t.id] || 0) / max * 100) + '%"></i></span><b>' + (c[t.id] || 0) + '</b></div>').join('') + '</div></div>';
+  return '<div class="panel"><h3 style="margin-top:0;">Sessions on duty per teacher (' + days + ' exam days, ' + (days * 2) + ' sessions)</h3><div class="ex-fair">' + ppl.map(t => '<div class="ex-fr"><span>' + escapeHtml(t.name) + '</span><span class="ex-bar"><i style="width:' + Math.round((c[t.id] || 0) / max * 100) + '%"></i></span><b>' + (c[t.id] || 0) + '</b></div>').join('') + '</div></div>';
 }
 function exSetupHtml(){
   const R = exR(), mon = dutyMonday(new Date()), ppl = deptPeople().slice().sort(dutyByName);
-  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Teachers per department each day</label><select onchange="exPer(this.value)">' + [1, 2, 3, 4].map(n => '<option' + (R.perDept === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button></div><p class="hint">Teachers are picked from each department (Pre-school, Primary, JHS), whoever has done the fewest days so far goes first, and teachers with lighter days in the normal timetable are chosen before busy ones. Names you change by hand stay when you rebuild the empty days.</p></div>'
+  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Teachers per department each session</label><select onchange="exPer(this.value)">' + [1, 2, 3, 4].map(n => '<option' + (R.perDept === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button></div><p class="hint">Every exam day has a Morning and an Afternoon session. Each department gets teachers from its own list (see Departments, built from the classes and subjects in Teacher Accounts), nobody is in two departments at the same time, and the teacher with the fewest sessions so far goes first. A teacher who did the morning is given the afternoon only when the department has no one else free. Names you change by hand stay when you rebuild the empty days.</p></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Actions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn" onclick="exRun(true)">Fill days without hand changes</button><button class="btn" onclick="exRun(false)">Rebuild every day</button><button class="btn" onclick="exSend()">Send to teachers</button><button class="btn" onclick="exPrint()">Print</button><button class="btn" onclick="exClear()">Clear everything</button></div></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Not invigilating</h3><p class="hint" style="margin-top:0;">Tick anyone who should be left out (for example the head or someone on leave).</p><div class="ex-ex">' + ppl.map(t => '<label><input type="checkbox" ' + ((R.exclude || []).indexOf(t.id) >= 0 ? 'checked ' : '') + 'onchange="exExclude(\'' + t.id + '\',this.checked)"> ' + escapeHtml(t.name) + '</label>').join('') + '</div></div>';
 }
@@ -15075,28 +15106,28 @@ function exPer(n){ exR().perDept = Math.max(1, Math.min(4, +n || 2)); exSave(); 
 function exAddDays(){
   const s = (document.getElementById('ex-start') || {}).value, n = +(document.getElementById('ex-weeks') || {}).value || 1; if (!s){ toast('Pick the first Monday.'); return; }
   const R = exR(), start = dutyMonday(new Date(s + 'T00:00:00')); let added = 0;
-  for (let w = 0; w < n; w++) for (let d = 0; d < 5; d++){ const iso = dutyAdd(start, w * 7 + d); if (!R.days.some(x => x.date === iso)){ R.days.push({ date: iso, label: '', time: '', pre: [], pri: [], jhs: [], manual: false }); added++; } }
-  const short = exGenerate(true); EX.wk = start; EX.tab = 'plan'; exSave(); toast(added + ' exam days added and teachers picked.' + (short ? ' Some places could not be filled.' : '')); renderExamDuty();
+  for (let w = 0; w < n; w++) for (let d = 0; d < 5; d++){ const iso = dutyAdd(start, w * 7 + d); if (!R.days.some(x => x.date === iso)){ R.days.push(exFix({ date: iso, manual: false })); added++; } }
+  exGenerate(true); EX.wk = start; EX.tab = 'plan'; exSave(); toast(added + ' exam days added and teachers picked.' + exShortMsg()); renderExamDuty();
 }
-function exRun(keep){ if (!keep && !confirm('Rebuild every day? Names you changed by hand will be replaced.')) return; if (!keep) exR().days.forEach(d => { d.manual = false; }); const short = exGenerate(keep); exSave(); toast('Done.' + (short ? ' Some places could not be filled.' : '')); EX.tab = 'plan'; renderExamDuty(); }
-function exField(date, f, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[f] = v.trim(); exSave(); }
-function exSet(date, dept, i, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[dept] = d[dept] || []; while (d[dept].length <= i) d[dept].push(''); d[dept][i] = v; d[dept] = d[dept].filter((x, k) => x || k < i); d.manual = true; exSave(); }
+function exRun(keep){ if (!keep && !confirm('Rebuild every day? Names you changed by hand will be replaced.')) return; if (!keep) exR().days.forEach(d => { d.manual = false; }); exGenerate(keep); exSave(); toast('Done.' + exShortMsg()); EX.tab = 'plan'; renderExamDuty(); }
+function exField(date, ses, f, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[ses][f] = v.trim(); exSave(); }
+function exSet(date, ses, dept, i, v){ const d = exR().days.find(x => x.date === date); if (!d) return; const arr = d[ses][dept] = d[ses][dept] || []; while (arr.length <= i) arr.push(''); arr[i] = v; d[ses][dept] = arr.filter((x, k) => x || k < i); d.manual = true; exSave(); }
 function exDelDay(date){ const R = exR(); R.days = R.days.filter(d => d.date !== date); exSave(); renderExamDuty(); }
 function exExclude(id, on){ const R = exR(); R.exclude = (R.exclude || []).filter(x => x !== id); if (on) R.exclude.push(id); exSave(); }
 function exClear(){ if (!confirm('Delete every exam day and name? This cannot be undone.')) return; const R = exR(); R.days = []; exSave(); renderExamDuty(); }
 function exText(tid){
-  const mine = exSorted().map(d => { const dp = DEPTS.find(x => (d[x.id] || []).indexOf(tid) >= 0); return dp ? exFmt(d.date) + ' – ' + dp.name + (d.time ? ' (' + d.time + ')' : '') + (d.label ? ', ' + d.label : '') : ''; }).filter(Boolean);
+  const mine = exMineList(tid).map(m => exFmt(m.d.date) + ' ' + m.s.name + ' – ' + m.dp.name + (m.o.time ? ' (' + m.o.time + ')' : '') + (m.o.label ? ', ' + m.o.label : ''));
   return mine.length ? 'EXAM INVIGILATION DUTY\n' + mine.join('\n') + '\nThank you for taking your turn.' : '';
 }
 function exSend(){
-  const tids = new Set(); exR().days.forEach(d => DEPTS.forEach(x => (d[x.id] || []).forEach(id => tids.add(id)))); let n = 0;
+  const tids = new Set(); exR().days.forEach(d => EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => tids.add(id))))); let n = 0;
   tids.forEach(id => { const t = (DATA.teachers || []).find(x => x.id === id), txt = exText(id); if (!t || !txt) return; const rec = msgSend(t.id, t.name, txt, 'message'); if (rec){ n++; try{ msgNotify(rec); }catch(e){} } });
   toast(n ? 'Sent to ' + n + ' teachers.' : 'Nothing to send yet.');
 }
 function exPrint(){
-  const rows = exSorted().map(d => '<tr><td>' + escapeHtml(exFmt(d.date)) + '</td><td>' + escapeHtml([d.label, d.time].filter(Boolean).join(' · ')) + '</td>' + DEPTS.map(x => '<td>' + escapeHtml((d[x.id] || []).map(exName).join(' & ')) + '</td>').join('') + '</tr>').join('');
+  const rows = exSorted().map(d => EXS.map((s, k) => '<tr>' + (k ? '' : '<td rowspan="2">' + escapeHtml(exFmt(d.date)) + '</td>') + '<td>' + s.name + '</td><td>' + escapeHtml([d[s.id].label, d[s.id].time].filter(Boolean).join(' · ')) + '</td>' + DEPTS.map(x => '<td>' + escapeHtml((d[s.id][x.id] || []).map(exName).join(' & ')) + '</td>').join('') + '</tr>').join('')).join('');
   const win = window.open('', '_blank'); if (!win){ toast('Allow pop-ups to print.'); return; }
-  win.document.write('<html><head><title>Exam invigilation</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px;text-align:left;font-size:13px}th{background:#eee}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || '') + ' – Exam invigilation timetable</h2><table><thead><tr><th>Day</th><th>Exam / time</th>' + DEPTS.map(x => '<th>' + x.name + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table></body></html>');
+  win.document.write('<html><head><title>Exam invigilation</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px;text-align:left;font-size:13px}th{background:#eee}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || '') + ' – Exam invigilation timetable</h2><table><thead><tr><th>Day</th><th>Session</th><th>Exam / time</th>' + DEPTS.map(x => '<th>' + x.name + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table></body></html>');
   win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
 }
 
