@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.21-e';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.21-f';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V||localStorage.getItem('gj_upd_bad')===V)return;
@@ -12793,7 +12793,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.21-e';
+const APP_VERSION = '2026.11.21-f';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -15065,7 +15065,7 @@ const EXS = [{ id:'am', name:'Morning', ph:'9:00AM - 10:30AM' }, { id:'pm', name
 /* Pre-school to Basic 3 write their exams with their own class teachers. Invigilation rotation covers Basic 4 to 9 (Basic 6-9 are upstairs). */
 function exRotClass(c){ const d = deptOfClass(c); if (d === 'jhs') return true; if (d !== 'pri') return false; const m = String(c || '').match(/(\d+)/); return !!m && +m[1] >= 4; }
 function exLoc(c){ const d = deptOfClass(c), m = String(c || '').match(/(\d+)/); return (d === 'jhs' || (d === 'pri' && m && +m[1] >= 6)) ? 'Upstairs' : 'Classroom'; }
-const EX_ALIAS = [['RME', 'RELIGIOUSANDMORALEDUCATION', 'RELIGIOUSMORALEDUCATION', 'RELIGIOUSMORAL'], ['FANTE', 'GHANAIANLANGUAGE', 'GHANALANGUAGE', 'GHANAIAN'], ['COMPUTING', 'ICT', 'COMPUTERSTUDIES'], ['CREATIVEARTS', 'CREATIVEART', 'CARTS', 'CREATIVEARTSANDDESIGN'], ['ENGLISH', 'ENGLISHLANGUAGE', 'SPELLINGSANDWRITING', 'WRITING', 'DICTATION'], ['SCIENCE', 'INTEGRATEDSCIENCE'], ['SOCIAL', 'SOCIALSTUDIES'], ['MATHS', 'MATHEMATICS', 'MATH'], ['CAREERTECH', 'CAREERTECHNOLOGY', 'CAREERTECHNOLOGYCT'], ['FRENCH', 'FRANCAIS']];
+const EX_ALIAS = [['RME', 'RELIGIOUSANDMORALEDUCATION', 'RELIGIOUSMORALEDUCATION', 'RELIGIOUSMORAL'], ['FANTE', 'GHANAIANLANGUAGE', 'GHANALANGUAGE', 'GHANAIAN'], ['COMPUTING', 'ICT', 'COMPUTERSTUDIES'], ['CREATIVEARTS', 'CREATIVEART', 'CARTS', 'CREATIVEARTSANDDESIGN'], ['ENGLISH', 'ENGLISHLANGUAGE', 'SPELLINGSANDWRITING', 'WRITING', 'SPELLING', 'SPELLINGS', 'DICTATION'], ['SCIENCE', 'INTEGRATEDSCIENCE'], ['SOCIAL', 'SOCIALSTUDIES'], ['MATHS', 'MATHEMATICS', 'MATH'], ['CAREERTECH', 'CAREERTECHNOLOGY', 'CAREERTECHNOLOGYCT'], ['FRENCH', 'FRANCAIS']];
 /* Exam Duty v2: class by class. Each exam day has a Morning and an Afternoon session; every class writing a paper in that session gets its own invigilator.
    Not used for invigilation: class teachers, anyone left out in Set up, and (when possible) teachers whose subject is the one being written. */
 function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.per = r.per || 1; r.exclude = r.exclude || []; r.days = r.days || []; r.classes = r.classes || []; r.days.forEach(exFix); return r; }
@@ -15202,9 +15202,14 @@ function exAutoSubjects(silent){
   const days = exSorted(); if (!days.length){ if (!silent) toast('Add the exam days first.'); return false; }
   const pri = exClasses().filter(c => deptOfClass(c) === 'pri'), jhs = exClasses().filter(c => deptOfClass(c) === 'jhs');
   days.forEach((d, i) => {
-    const up = EX_UP[i], be = EX_BECE[i];
+    const mon = i === 0, up = mon ? null : EX_UP[i], be = mon ? null : EX_BECE[i - 1];
     EXS.forEach((ses, k) => {
       const o = d[ses.id]; o.tl = o.tl || {};
+      if (mon){
+        /* first Monday: Writing (morning) and Spelling (afternoon) for every class, real exams start Tuesday */
+        pri.concat(jhs).forEach(c => { o.papers[c] = k ? 'Spelling' : 'Writing'; });
+        o.time = o.time || ses.ph; delete o.tl.jhs; return;
+      }
       pri.forEach(c => { const v = up ? up[k] : ''; if (v) o.papers[c] = v; else delete o.papers[c]; });
       jhs.forEach(c => { const v = be ? be.p[k] : ''; if (v) o.papers[c] = v; else delete o.papers[c]; });
       if (up){ o.time = o.time || ses.ph; }
@@ -15259,7 +15264,7 @@ function exAddDays(){
     R.days.push(d); added++;
   }
   exAutoSubjects(true);
-  EX.wk = start; EX.day = ''; EX.tab = 'plan'; exSave(); toast(added + ' exam days added. Subjects (Upper Primary + BECE) and teachers are filled in; change anything you need.' + exShortMsg()); renderExamDuty();
+  EX.wk = start; EX.day = ''; EX.tab = 'plan'; exSave(); toast(added + ' exam days added. Monday is Writing and Spelling; the exams start Tuesday (Upper Primary + BECE). Teachers are filled in; change anything you need.' + exShortMsg()); renderExamDuty();
 }
 function exRun(keep){ if (!keep && !confirm('Rebuild every day? Names you changed by hand will be replaced.')) return; if (!keep) exR().days.forEach(d => { d.manual = false; }); exGenerate(keep); exSave(); toast('Done.' + exShortMsg()); EX.tab = 'plan'; renderExamDuty(); }
 function exField(date, ses, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[ses].time = v.trim(); exSave(); }
