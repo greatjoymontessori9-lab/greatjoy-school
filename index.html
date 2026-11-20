@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.19-c';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.20-c';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V)return;
@@ -382,6 +382,16 @@ var t=/<title>([^<]*)<\/title>/.exec(h);if(t)document.title=t[1];var de=document
   .hs-pi{display:flex;flex-direction:column;gap:4px;border-radius:14px;padding:8px 10px;background:var(--hc);color:var(--hi);font-weight:800;font-size:13px;}
   .hs-pi input{border-radius:8px;border:0;padding:7px;font-size:15px;width:100%;box-sizing:border-box;}
   .hs-evh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .lb-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px;} .lb-filters select,.lb-filters input{width:100%;box-sizing:border-box;}
+  .lb-spot{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px;}
+  .lb-card{border-radius:20px;padding:14px;text-align:center;background:var(--card,#fff);border:1px solid var(--line,#e2e2e2);display:grid;gap:3px;} .lb-card .lb-m{font-size:30px;} .lb-card span{font-size:12px;opacity:.75;} .lb-card em{font-style:normal;font-weight:900;font-size:22px;color:#16a34a;}
+  .lb-card.r1{background:linear-gradient(135deg,#fff7d1,#ffe48a);border-color:#f2c200;} .lb-card.r2{background:linear-gradient(135deg,#f4f6f8,#dfe4ea);} .lb-card.r3{background:linear-gradient(135deg,#fff0e4,#f3cfae);}
+  .lb-tbl{width:100%;border-collapse:collapse;font-size:14px;} .lb-tbl th{text-align:left;padding:10px 12px;font-size:12px;opacity:.7;background:rgba(0,0,0,.03);} .lb-tbl td{padding:10px 12px;border-top:1px solid var(--line,#eee);} .lb-tbl .n{text-align:right;} .lb-tbl tr.top td{background:rgba(245,184,0,.08);} .lb-tbl td b{color:#16a34a;}
+  .lb-hd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;}
+  .lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;} .lb-cc h4{margin:0 0 8px;} .lb-line{display:grid;grid-template-columns:26px 1fr auto;gap:6px;align-items:center;padding:4px 0;font-size:14px;} .lb-line em{font-style:normal;font-weight:800;color:#16a34a;} .lb-line small{opacity:.6;font-weight:400;}
+  .ex-tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px;} .ex-tbl th{text-align:left;padding:8px;font-size:12px;opacity:.7;} .ex-tbl td{padding:5px 6px;border-top:1px solid var(--line,#eee);vertical-align:middle;} .ex-tbl input,.ex-tbl select{width:100%;box-sizing:border-box;min-width:110px;}
+  .ex-warn{background:#fff1f0;color:#b42318;border:1px solid #f5b5ae;border-radius:12px;padding:7px 10px;margin:6px 0;font-size:13px;font-weight:600;}
+  .ex-all{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:8px 0 10px;}
   .ex-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;}
   .ex-day{background:var(--card,#fff);border:1px solid var(--line,#e2e2e2);border-radius:18px;padding:12px;} .ex-day.past{opacity:.6;}
   .ex-dh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;}
@@ -1019,6 +1029,7 @@ var t=/<title>([^<]*)<\/title>/.exec(h);if(t)document.title=t[1];var de=document
       <button class="nav-item teacher-only" data-view="teacherhome" onclick="showView('teacherhome')" style="display:none;">My Day</button>
       <button class="nav-item teacher-only" data-view="timetable" onclick="showView('timetable')" style="display:none;">My Timetable</button>
       <button class="nav-item teacher-only" data-view="planner" onclick="showView('planner')" style="display:none;">Lesson Planner</button>
+      <button class="nav-item teacher-only" data-view="leaderboard" onclick="showView('leaderboard')" style="display:none;">Leaderboard</button>
       <button class="nav-item teacher-only" data-view="houses" onclick="showView('houses')" style="display:none;">Houses</button>
       <button class="nav-item teacher-only" data-view="examduty" onclick="showView('examduty')" style="display:none;">Exam Duty</button>
       <button class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">Dashboard</button>
@@ -1046,6 +1057,7 @@ var t=/<title>([^<]*)<\/title>/.exec(h);if(t)document.title=t[1];var de=document
       <button class="nav-item admin-only" data-view="timetable" onclick="showView('timetable')">Timetable</button>
       <button class="nav-item admin-only" data-view="departments" onclick="showView('departments')">Departments</button>
       <button class="nav-item admin-only" data-view="duty" onclick="showView('duty')">Duty Roster</button>
+      <button class="nav-item admin-only" data-view="leaderboard" onclick="showView('leaderboard')">Leaderboard</button>
       <button class="nav-item admin-only" data-view="houses" onclick="showView('houses')">Houses</button>
       <button class="nav-item admin-only" data-view="examduty" onclick="showView('examduty')">Exam Duty</button>
       <button class="nav-item admin-only" data-view="planner" onclick="showView('planner')">Lesson Planner</button>
@@ -1689,6 +1701,10 @@ var t=/<title>([^<]*)<\/title>/.exec(h);if(t)document.title=t[1];var de=document
         <div id="du-root"></div>
       </div>
 
+      <div class="view" id="view-leaderboard">
+        <div class="view-header"><div><h1 class="view-title">Leaderboard</h1><p class="view-sub">Find the best students to award: filter by level, class, subject, term or mock.</p></div></div>
+        <div id="lb-root"></div>
+      </div>
       <div class="view" id="view-houses">
         <div class="view-header"><div><h1 class="view-title">Houses</h1><p class="view-sub">Yellow, Blue, Green and Red. Everyone belongs to one house; houses earn points in competitions.</p></div></div>
         <div id="hs-root"></div>
@@ -3207,7 +3223,7 @@ async function connectToExistingLedger(){
 const PROPRIETOR_ID = 'proprietor';
 const PROPRIETOR_NAME = 'Ebenezer Okine';
 const PROPRIETOR_DEFAULT_PIN = '7272';
-const PROP_VIEWS = ['schoolanalytics','departments','duty','houses','examduty','messages','messages-p','overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
+const PROP_VIEWS = ['schoolanalytics','departments','duty','houses','examduty','leaderboard','messages','messages-p','overview','dashboard','students','payments','admissionfees','feedingfees','attendance','summary','academic','fees','staff'];
 let voBypass = false;
 function isProprietorRec(t){ return !!t && (t.isProprietor === true || t.id === PROPRIETOR_ID); }
 /* The proprietor lives in the teachers list (so it syncs like every other login). The stand-in copy is stamped as
@@ -3378,7 +3394,7 @@ function ovAttFor(classes){
 }
 function ovTeacherData(){
   return (DATA.teachers || []).filter(t => !isProprietorRec(t)).map(t => {
-    const items = (t.allocations || []).filter(a => a.subject !== '*').map(a => {
+    const items = (t.allocations || []).filter(a => a.subject !== '*' && !noReportClass(a.class)).map(a => {
       const ac = DATA.academic.classes[a.level + '|' + a.class];
       const roster = ac ? ac.students : [];
       const done = roster.filter(st => st.scores && st.scores[a.subject]).length;
@@ -5200,7 +5216,7 @@ function showView(name){
   if (session.role === 'proprietor'){ if (PROP_VIEWS.indexOf(name) < 0) return; }
   else if (!(session.role === 'admin') && ['fees','import','backup','settings','academic','idcards','teacheraccounts','staff','studentaccess','schoolanalytics','departments','duty'].includes(name)) return;
   if (name === 'overview' && session.role !== 'admin' && session.role !== 'proprietor') return;
-  if (session.role === 'teacher' && !['messages','teacherhome','teacherscores','summary','attendance','assessments','timetable','planner','houses','examduty'].includes(name)) return;
+  if (session.role === 'teacher' && !['messages','teacherhome','teacherscores','summary','attendance','assessments','timetable','planner','houses','examduty','leaderboard'].includes(name)) return;
   if ((name === 'timetable' || name === 'planner') && session.role !== 'admin' && session.role !== 'teacher') return;
   if (name === 'assessments' && session.role !== 'admin' && session.role !== 'teacher') return;
   if (name === 'attendance' && !attendanceClassesForUser().length && session.role !== 'admin' && session.role !== 'proprietor') return;
@@ -5217,7 +5233,7 @@ function showView(name){
   const renderers = {dashboard:renderDashboard, admission:renderAdmission, students:renderStudents, payments:renderPaymentsView,
                       admissionfees:renderAdmissionFeesView, feedingfees:renderFeedingFeesView, teacherscores:renderTeacherScores,
                       fees:renderFees, import:renderImportView, backup:()=>{}, academic:renderAcademic, settings:renderSettingsView,
-                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, messages:renderMessages, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner, schoolanalytics:renderSchoolAnalytics, departments:renderDepartments, duty:renderDuty, houses:renderHouses, examduty:renderExamDuty};
+                      idcards:renderIdCardList, summary:renderStudentSummaryView, teacheraccounts:renderTeacherSetupPage, attendance:renderAttendance, messages:renderMessages, overview:renderOverview, staff:renderStaffView, studentaccess:renderStudentAccess, assessments:renderAssessments, teacherhome:renderTeacherHome, timetable:renderTimetable, planner:renderPlanner, schoolanalytics:renderSchoolAnalytics, departments:renderDepartments, duty:renderDuty, houses:renderHouses, examduty:renderExamDuty, leaderboard:renderLeaderboard};
   ovAutoRefresh(name === 'overview');
   if (renderers[name]) renderers[name]();
   if (name === 'dashboard'){ try{ gjWelcome(); }catch(e){} }
@@ -5830,6 +5846,8 @@ function deleteTeacher(id){
 const TEACHER_SETUP_CLASSES_BY_LEVEL = { Preschool: ['Creche','Nursery 1','Nursery 2','KG1','KG2'], Primary: ['Primary 1','Primary 2','Primary 3','Primary 4','Primary 5','Primary 6'], JHS: ['JHS 1','JHS 2','JHS 3'] };
 // Lets "JHS1"/"J1"/"j 1"/"jhs1" etc. all mean the same class, and "C"/"C1"/"Creche"/"creche 1" etc. all mean Creche —
 // so a teacher allocated a class here still picks up students whose class was typed differently elsewhere in the app.
+/* Creche is left out of report cards, scores and assessments (their report is done by hand); attendance and everything else still work. */
+function noReportClass(c){ return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^CRECHE\d*$/, 'C') === 'C'; }
 function canonicalizeClassName(raw){
   if (!raw) return '';
   const s = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -6411,6 +6429,7 @@ function computeClassesForSubject(teacher, subject){
   const result = [];
   const seen = new Set();
   (teacher.allocations||[]).forEach(a => {
+    if (noReportClass(a.class)) return;
     let matches = false;
     if (a.subject === subject) matches = !classExcludes(a.class, subject);
     else if (a.subject === '*'){
@@ -6482,9 +6501,9 @@ function selectTeacherConduct(){
   renderTeacherScores();
 }
 function renderConductPanel(teacher){
-  const ctClasses = (teacher.allocations || []).filter(a => a.subject === '*');
+  const ctClasses = (teacher.allocations || []).filter(a => a.subject === '*' && !noReportClass(a.class));
   const tabsEl = document.getElementById('teacherscores-class-tabs'), box = document.getElementById('teacherscores-content');
-  if (!ctClasses.length){ tabsEl.innerHTML = ''; box.innerHTML = '<div class="empty-state">You are not a class teacher yet.</div>'; return; }
+  if (!ctClasses.length){ tabsEl.innerHTML = ''; box.innerHTML = '<div class="empty-state">' + ((teacher.allocations || []).some(x => x.subject === '*') ? 'Creche has no conduct, remarks or report cards here (done by hand). Attendance is under the Attendance page.' : 'You are not a class teacher yet.') + '</div>'; return; }
   if (!teacherScoresState.ctKey || !ctClasses.some(a => a.level + '|' + a.class === teacherScoresState.ctKey)) teacherScoresState.ctKey = ctClasses[0].level + '|' + ctClasses[0].class;
   tabsEl.innerHTML = ctClasses.length > 1 ? ctClasses.map(a => {
     const k = a.level + '|' + a.class;
@@ -8543,7 +8562,7 @@ function acSheetClasses(){
   const out = [], seen = {};
   Object.keys((DATA.academic && DATA.academic.classes) || {}).forEach(k => { const c = DATA.academic.classes[k]; out.push({ level: c.level, cls: c.class }); seen[c.level + '|' + c.class] = 1; });
   Object.keys(TEACHER_SETUP_CLASSES_BY_LEVEL).forEach(l => TEACHER_SETUP_CLASSES_BY_LEVEL[l].forEach(c => { if (!seen[l + '|' + c]) out.push({ level: l, cls: c }); }));
-  return out;
+  return out.filter(x => !noReportClass(x.cls));
 }
 function acSheetFillSelect(){
   const sel = document.getElementById('ac-sheet-class'); if (!sel) return;
@@ -8629,7 +8648,7 @@ function populateAcClassDropdown(){
   try{ acSheetFillSelect(); }catch(e){}
   const sel = document.getElementById('ac-card-class');
   const current = sel.value;
-  const keys = Object.keys(DATA.academic.classes);
+  const keys = Object.keys(DATA.academic.classes).filter(k => !noReportClass((DATA.academic.classes[k] || {}).class));
   sel.innerHTML = '<option value="">Select a class...</option>' +
     keys.map(k => {
       const c = DATA.academic.classes[k];
@@ -9665,6 +9684,7 @@ function findAcademicEntriesForStudent(studentId){
   const entries = [];
   Object.keys(DATA.academic.classes).forEach(key => {
     const c = DATA.academic.classes[key];
+    if (noReportClass(c.class)) return;
     const idx = c.students.findIndex(x=>x.studentId===studentId);
     if (idx >= 0){
       const stats = computeStatsForClassData(c);
@@ -10303,7 +10323,7 @@ function buildStyledReportCard(key, studentId, opts){
     <div class="rc2-info">
       <div class="rc2-info-row"><span class="rc2-label">NAME:</span><span class="rc2-value rc2-fill">${escapeHtml(s.name)}</span><span class="rc2-label">CLASS:</span><span class="rc2-value rc2-fill">${escapeHtml(c.class)}</span></div>
       <div class="rc2-info-row"><span class="rc2-label">NO. ON ROLL:</span><span class="rc2-value rc2-fill">${c.students.length}</span><span class="rc2-label">TERM:</span><span class="rc2-value rc2-fill">${escapeHtml(String(set.term||''))}</span><span class="rc2-label">POSITION:</span><span class="rc2-value rc2-fill">${ordinal(stats.overallRanks[idx])}</span><span class="rc2-label">YEAR:</span><span class="rc2-value rc2-fill">${escapeHtml(String(set.year||''))}</span></div>
-      <div class="rc2-info-row"><span class="rc2-label">VACATION DATE:</span><span class="rc2-value rc2-fill">${fmtDateLong(set.vacationDate)}</span><span class="rc2-label">RE-OPENING DATE:</span><span class="rc2-value rc2-fill">${fmtDateLong(set.reopeningDate)}</span>${(() => { const hid = houseOf(s.studentId ? 's:' + s.studentId : ''), hh = houseInfo(hid); return hh ? `<span class="rc2-label">HOUSE:</span><span class="rc2-value rc2-fill"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${hh.c};margin-right:5px;"></i>${escapeHtml(houseName(hid))}</span>` : ''; })()}</div>
+      <div class="rc2-info-row"><span class="rc2-label">VACATION DATE:</span><span class="rc2-value rc2-fill">${fmtDateLong(set.vacationDate)}</span><span class="rc2-label">RE-OPENING DATE:</span><span class="rc2-value rc2-fill">${fmtDateLong(set.reopeningDate)}</span></div>
     </div>
     <table class="rc2-table">
       <thead><tr><th>SUBJECT</th><th>CLASS SCORE<br>50%</th><th>EXAM SCORE<br>50%</th><th>TOTAL SCORE<br>100%</th><th>GRADE</th><th>POSITION</th><th>REMARKS</th></tr></thead>
@@ -12294,7 +12314,7 @@ function gjIcon(name, size){ return '<svg viewBox="0 0 24 24" width="' + (size |
 const GJ_NAVIC = { teacherhome:['home','#f97316,#fb923c'], timetable:['clock','#06b6d4,#22d3ee'], planner:['book','#8b5cf6,#a78bfa'], dashboard:['home','#3b82f6,#60a5fa'], overview:['chart','#6366f1,#818cf8'], admission:['userplus','#10b981,#34d399'], students:['users','#0ea5e9,#38bdf8'],
   payments:['card','#22c55e,#4ade80'], admissionfees:['ticket','#f59e0b,#fbbf24'], feedingfees:['utensils','#ef4444,#f87171'], messages:['chat','#ec4899,#f472b6'], 'messages-p':['phone','#14b8a6,#2dd4bf'], attendance:['calendar','#8b5cf6,#c084fc'], teacherscores:['pen','#f97316,#fdba74'],
   assessments:['clipboard','#06b6d4,#67e8f9'], fees:['cash','#16a34a,#4ade80'], import:['upload','#0ea5e9,#7dd3fc'], backup:['backup','#64748b,#94a3b8'], academic:['trophy','#eab308,#fde047'], summary:['sheet','#6366f1,#a5b4fc'], idcards:['id','#f43f5e,#fb7185'],
-  schoolanalytics:['chart','#0ea5e9,#6366f1'], departments:['users','#14b8a6,#22d3ee'], duty:['shield','#f97316,#fb923c'], houses:['trophy','#f59e0b,#ef4444'], examduty:['clock','#6366f1,#8b5cf6'], teacheraccounts:['key','#a855f7,#c084fc'], staff:['briefcase','#14b8a6,#5eead4'], studentaccess:['shield','#0d9488,#2dd4bf'], settings:['cog','#475569,#94a3b8'] };
+  schoolanalytics:['chart','#0ea5e9,#6366f1'], departments:['users','#14b8a6,#22d3ee'], duty:['shield','#f97316,#fb923c'], houses:['trophy','#f59e0b,#ef4444'], leaderboard:['trophy','#eab308,#f97316'], examduty:['clock','#6366f1,#8b5cf6'], teacheraccounts:['key','#a855f7,#c084fc'], staff:['briefcase','#14b8a6,#5eead4'], studentaccess:['shield','#0d9488,#2dd4bf'], settings:['cog','#475569,#94a3b8'] };
 function gjDecorateNav(){
   document.querySelectorAll('.nav-item[data-view]').forEach(b => {
     if (b.querySelector('.nav-ic')) return;
@@ -12317,7 +12337,7 @@ const GJ_ACC_OPEN = {};
 function gjFold(){
   const v = document.querySelector('.view.active'); if (!v) return;
   const id = v.id.replace('view-', '');
-  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages', 'schoolanalytics', 'departments', 'duty', 'houses', 'examduty', 'settings'].includes(id)) return;
+  if (['dashboard', 'payments', 'admission', 'teacherhome', 'messages', 'schoolanalytics', 'departments', 'duty', 'houses', 'examduty', 'leaderboard', 'settings'].includes(id)) return;
   const panels = [...v.querySelectorAll(':scope > .panel, :scope > div > .panel')].filter(p => p.firstElementChild && p.firstElementChild.tagName === 'H3');
   if (panels.length < 2) return;
   panels.forEach((p, i) => {
@@ -12728,7 +12748,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.19-c';
+const APP_VERSION = '2026.11.20-c';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -13154,7 +13174,7 @@ function asmIsAdmin(){ return session.role === 'admin'; }
 /* who may write work for which class and subject: teachers only their own allocations (class teachers: every subject of their class) */
 function asmTargets(){
   const out = {};     // 'level|class' -> {level, class, subjects:[]}
-  const add = (level, cls, subj) => { const k = level + '|' + cls; (out[k] = out[k] || {level, class:cls, subjects:[]}); if (subj && !out[k].subjects.includes(subj)) out[k].subjects.push(subj); };
+  const add = (level, cls, subj) => { if (noReportClass(cls)) return; const k = level + '|' + cls; (out[k] = out[k] || {level, class:cls, subjects:[]}); if (subj && !out[k].subjects.includes(subj)) out[k].subjects.push(subj); };
   if (session.role === 'teacher'){
     const t = getTeacherObj(); if (!t) return [];
     computeTeacherSubjectTabs(t).subjects.forEach(sub => computeClassesForSubject(t, sub).forEach(c => add(c.level, c.class, sub)));
@@ -13983,14 +14003,14 @@ const ACCESS_GROUPS = [
   ['Students', [['admission','New Admission'],['students','Students list'],['summary','Student Summary'],['import','Import Students'],['idcards','ID Cards'],['studentaccess','Student Access']]],
   ['Fees', [['payments','Payments'],['admissionfees','Admission Fee'],['feedingfees','Feeding Fee'],['fees','Fee Schedule']]],
   ['Attendance & Exams', [['attendance','Attendance (all classes)'],['assessments','Homework & Tests'],['academic','Academic Records'],['schoolanalytics','School Analytics']]],
-  ['Employees', [['staff','Staff'],['teacheraccounts','Teacher Accounts'],['timetable','Timetable'],['departments','Departments'],['duty','Duty Roster'],['houses','Houses'],['examduty','Exam Duty'],['planner','Lesson Planner']]],
+  ['Employees', [['staff','Staff'],['teacheraccounts','Teacher Accounts'],['timetable','Timetable'],['departments','Departments'],['duty','Duty Roster'],['houses','Houses'],['examduty','Exam Duty'],['leaderboard','Leaderboard'],['planner','Lesson Planner']]],
   ['Messages', [['messages-p','SMS & WhatsApp to parents']]],
   ['School', [['settings','Settings'],['backup','Backup & Restore']]]
 ];
 const ACCESS_SENSITIVE = ['settings','backup','teacheraccounts','fees','staff','studentaccess'];
 const CASHIER_NATIVE = ['dashboard','admission','students','payments','admissionfees','feedingfees','summary'];
 const ASSIST_DEFAULT = ['dashboard','overview','admission','students','summary','import','idcards','payments','admissionfees','feedingfees','attendance','assessments','academic','timetable','planner','messages-p'];
-const TEACHER_OWN = ['teacherhome','teacherscores','timetable','planner','summary','attendance','assessments','houses','examduty'];
+const TEACHER_OWN = ['teacherhome','teacherscores','timetable','planner','summary','attendance','assessments','houses','examduty','leaderboard'];
 const ACCESS_PRESETS = {
   none: [],
   data: ['dashboard','admission','students','summary','idcards','payments','admissionfees','feedingfees','attendance','academic'],
@@ -14280,7 +14300,7 @@ const NAV_GROUPS = [
   { k:'students', t:'Students', ic:'users', c:'#0ea5e9,#38bdf8', v:['admission','students','summary','import','idcards','studentaccess'] },
   { k:'fees', t:'Fees', ic:'cash', c:'#22c55e,#4ade80', v:['payments','admissionfees','feedingfees','fees'] },
   { k:'exams', t:'Exams & Records', ic:'trophy', c:'#eab308,#fde047', v:['teacherscores','assessments','academic','schoolanalytics'] },
-  { k:'emp', t:'Employees', ic:'briefcase', c:'#14b8a6,#5eead4', v:['staff','teacheraccounts','timetable','departments','duty','houses','examduty','planner'] },
+  { k:'emp', t:'Employees', ic:'briefcase', c:'#14b8a6,#5eead4', v:['staff','teacheraccounts','timetable','departments','duty','houses','examduty','leaderboard','planner'] },
   { k:'msg', t:'Messages', ic:'chat', c:'#ec4899,#f472b6', v:['messages','messages-p'] },
   { k:'school', t:'School', ic:'cog', c:'#475569,#94a3b8', v:['settings','backup'] }
 ];
@@ -14362,7 +14382,7 @@ function pubSnapshot(key, studentId, css){
 }
 function pubOwing(main){ if (!main) return false; const st = studentStats(main); return st.feeKnown && st.balance > 0; }
 function pubKeys(which){
-  if (which === 'all') return Object.keys(DATA.academic.classes || {});
+  if (which === 'all') return Object.keys(DATA.academic.classes || {}).filter(k => !noReportClass((DATA.academic.classes[k] || {}).class));
   const k = document.getElementById('ac-card-class').value; return k ? [k] : [];
 }
 function pubMsg(html, bad){ const el = document.getElementById('ac-pub-msg'); if (el) el.innerHTML = html ? '<div class="' + (bad ? 'gate-error' : 'hint') + '" style="margin:8px 0;">' + html + '</div>' : ''; }
@@ -14456,7 +14476,7 @@ function an2Term(sc){ return sc && (+sc.classScore || +sc.examScore) ? Math.roun
 function an2ClassOrder(){ const o = []; try{ Object.keys(TEACHER_SETUP_CLASSES_BY_LEVEL).forEach(l => TEACHER_SETUP_CLASSES_BY_LEVEL[l].forEach(c => o.push(c))); }catch(e){} return o; }
 function an2Classes(){
   const ord = an2ClassOrder(), ac = (DATA.academic && DATA.academic.classes) || {};
-  return Object.keys(ac).map(k => ({ key: k, c: ac[k], label: ac[k].class || k })).filter(x => x.c && (x.c.students || []).length)
+  return Object.keys(ac).map(k => ({ key: k, c: ac[k], label: ac[k].class || k })).filter(x => x.c && (x.c.students || []).length && !noReportClass(x.label))
     .sort((a, b) => { const ia = ord.indexOf(a.label), ib = ord.indexOf(b.label); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
 }
 /* one comparison = { aLabel, bLabel, subjects, studs:[{name, cls, A:{sub:val}, B:{sub:val}, aggA, aggB}] } */
@@ -14995,57 +15015,68 @@ function houseNamesSave(){ const H = houseData(); HOUSES.forEach(x => { H.cfg[x.
 function houseRespread(){ if (!confirm('Give every student, teacher and worker a new house? Everyone will be spread evenly again and any moves you made by hand are lost. Points and results stay.')) return; houseAssignAll(true); saveData(); toast('Everyone spread again.'); renderHouses(); }
 
 /* ================================================================ EXAM INVIGILATION TIMETABLE */
-const EX = { tab:'plan', wk:'', who:'' };
+const EX = { tab:'plan', wk:'', day:'', who:'' };
 const EXS = [{ id:'am', name:'Morning', ph:'8:00 - 10:00' }, { id:'pm', name:'Afternoon', ph:'1:00 - 3:00' }];
-function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.perDept = r.perDept || 2; r.exclude = r.exclude || []; r.days = r.days || []; r.days.forEach(exFix); return r; }
+/* Exam Duty v2: class by class. Each exam day has a Morning and an Afternoon session; every class writing a paper in that session gets its own invigilator.
+   Not used for invigilation: class teachers, anyone left out in Set up, and (when possible) teachers whose subject is the one being written. */
+function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.per = r.per || 1; r.exclude = r.exclude || []; r.days = r.days || []; r.classes = r.classes || []; r.days.forEach(exFix); return r; }
 function exFix(d){
-  if (!d.am){ d.am = { pre: d.pre || [], pri: d.pri || [], jhs: d.jhs || [], label: d.label || '', time: d.time || '' }; delete d.pre; delete d.pri; delete d.jhs; delete d.label; delete d.time; }
-  if (!d.pm) d.pm = { pre: [], pri: [], jhs: [], label: '', time: '' };
-  EXS.forEach(s => DEPTS.forEach(x => { d[s.id][x.id] = d[s.id][x.id] || []; }));
+  EXS.forEach(s => { const o = d[s.id] = d[s.id] || {}; ['pre', 'pri', 'jhs'].forEach(k => { delete o[k]; }); o.time = o.time || ''; o.papers = o.papers || {}; o.inv = o.inv || {}; o.warn = o.warn || ''; });
+  ['pre', 'pri', 'jhs', 'label', 'time'].forEach(k => { delete d[k]; });
   return d;
 }
 function exSave(){ markMetaDirty('examDuty'); saveData(); }
 function exDayName(iso){ return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(iso + 'T00:00:00').getDay()]; }
-function exLoad(tid, iso){
-  try{
-    const r = ttRes(), T = ttSetup(); if (!r) return 0;
-    const dn = exDayName(iso).slice(0, 3).toLowerCase(), d = T.days.findIndex(x => String(x).toLowerCase().slice(0, 3) === dn); if (d < 0) return 0;
-    let n = 0; Object.keys(r.grid).forEach(cls => { const row = r.grid[cls][d]; if (!row) return; row.forEach(k => { if (k != null && k >= 0 && r.pairs[k] && r.pairs[k].t === tid) n++; }); });
-    return n;
-  }catch(e){ return 0; }
-}
 function exAwayMin(tid, iso){ try{ return ttAwayFor(tid, exDayName(iso)).reduce((a, x) => a + Math.max(0, x[1] - x[0]), 0); }catch(e){ return 0; } }
-function exOk(t, iso){ return (exR().exclude || []).indexOf(t.id) < 0 && exAwayMin(t.id, iso) < 360; }
-function exPool(deptId, iso){ return deptMembers(deptId).filter(t => exOk(t, iso)); }
 function exName(id){ const t = (DATA.teachers || []).find(x => x.id === id); return t ? t.name : '—'; }
 function exSorted(){ return exR().days.slice().sort((a, b) => a.date.localeCompare(b.date)); }
-/* Each session (Morning / Afternoon) of each day: every department gets its own teachers (from the department list built from the timetable allocations). */
+function exAllClasses(){
+  let l = []; try{ l = an2ClassOrder().slice(); }catch(e){}
+  if (!l.length){ const seen = {}; (DATA.teachers || []).forEach(t => (t.allocations || []).forEach(a => { if (a.class && a.class !== '*' && !seen[a.class]){ seen[a.class] = 1; l.push(a.class); } })); }
+  return l.filter(c => !noReportClass(c));
+}
+function exClasses(){ const R = exR(), all = exAllClasses(); return R.classes.length ? all.filter(c => R.classes.indexOf(c) >= 0) : all; }
+function exNorm(s){ return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function exSubjMatch(a, b){ a = exNorm(a); b = exNorm(b); return !!a && !!b && (a === b || (a.length > 3 && b.length > 3 && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0))); }
+function exIsClassTeacher(t){ return (t.allocations || []).some(a => a.class && a.subject === '*'); }
+function exTeachesSubject(t, subj){ return (t.allocations || []).some(a => a.subject && a.subject !== '*' && exSubjMatch(a.subject, subj)); }
+function exSubjects(){
+  const seen = {}, out = [];
+  const add = s => { s = String(s || '').trim(); if (s && s !== '*' && !seen[exNorm(s)]){ seen[exNorm(s)] = 1; out.push(s); } };
+  ['Writing', 'Dictation'].forEach(add);
+  (DATA.teachers || []).forEach(t => (t.allocations || []).forEach(a => add(a.subject)));
+  try{ Object.keys((DATA.academic && DATA.academic.classes) || {}).forEach(k => ((DATA.academic.classes[k].subjects) || []).forEach(add)); }catch(e){}
+  return out.sort((a, b) => a.localeCompare(b));
+}
+function exPeople(){ return (typeof deptPeople === 'function' ? deptPeople() : (DATA.teachers || [])).filter(t => (exR().exclude || []).indexOf(t.id) < 0); }
 function exGenerate(keepManual){
-  const R = exR(), days = exSorted(), cnt = {}, last = {}; let prev = '';
-  days.forEach(d => { if (keepManual && d.manual) EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => { cnt[id] = (cnt[id] || 0) + 1; last[id] = d.date; }))); });
-  const shortList = {};
+  const R = exR(), days = exSorted(), classes = exClasses(), cnt = {}, last = {}; let prev = '', warnN = 0;
+  days.forEach(d => { if (keepManual && d.manual) EXS.forEach(s => Object.keys(d[s.id].inv).forEach(c => (d[s.id].inv[c] || []).forEach(id => { if (id){ cnt[id] = (cnt[id] || 0) + 1; last[id] = d.date; } }))); });
   days.forEach(d => {
     if (keepManual && d.manual){ prev = d.date; return; }
     const today = {};
     EXS.forEach(s => {
-      const used = new Set();
-      DEPTS.forEach(x => { d[s.id][x.id] = []; });
-      const order = DEPTS.map(x => ({ id: x.id, name: x.name, pool: exPool(x.id, d.date) })).sort((p, q) => p.pool.length - q.pool.length);
-      const best = list => list.filter(t => !used.has(t.id)).sort((p, q) => (cnt[p.id] || 0) - (cnt[q.id] || 0) || (today[p.id] || 0) - (today[q.id] || 0) || ((last[p.id] === prev) ? 1 : 0) - ((last[q.id] === prev) ? 1 : 0) || exLoad(p.id, d.date) - exLoad(q.id, d.date) || String(last[p.id] || '').localeCompare(String(last[q.id] || '')) || String(p.name).localeCompare(String(q.name)))[0];
-      order.forEach(o => { for (let i = 0; i < R.perDept; i++){ const t = best(o.pool); if (!t){ shortList[o.name] = 1; continue; } d[s.id][o.id].push(t.id); used.add(t.id); today[t.id] = (today[t.id] || 0) + 1; cnt[t.id] = (cnt[t.id] || 0) + 1; last[t.id] = d.date; } });
+      const o = d[s.id]; o.inv = {}; o.warn = '';
+      const writing = classes.filter(c => o.papers[c]), subjects = writing.map(c => o.papers[c]);
+      const people = exPeople().filter(t => exAwayMin(t.id, d.date) < 360);
+      const free = people.filter(t => !subjects.some(sb => exTeachesSubject(t, sb))), excused = people.filter(t => subjects.some(sb => exTeachesSubject(t, sb)));
+      const sess = {}; let fromExcused = 0, shared = 0;
+      const best = (list, inClass) => list.filter(t => inClass.indexOf(t.id) < 0).sort((p, q) => (sess[p.id] || 0) - (sess[q.id] || 0) || (cnt[p.id] || 0) - (cnt[q.id] || 0) || (today[p.id] || 0) - (today[q.id] || 0) || String(last[p.id] || '').localeCompare(String(last[q.id] || '')) || String(p.name).localeCompare(String(q.name)))[0];
+      writing.forEach(c => { o.inv[c] = []; for (let i = 0; i < R.per; i++){ let t = best(free, o.inv[c]); if (!t){ t = best(excused, o.inv[c]); if (t) fromExcused++; } if (!t){ o.warn = 'No teacher available for ' + c + '.'; warnN++; continue; } if (sess[t.id]) shared++; o.inv[c].push(t.id); sess[t.id] = (sess[t.id] || 0) + 1; today[t.id] = (today[t.id] || 0) + 1; cnt[t.id] = (cnt[t.id] || 0) + 1; last[t.id] = d.date; } });
+      if (!o.warn){ const m = []; if (shared) m.push(shared + ' class' + (shared > 1 ? 'es' : '') + ' share an invigilator because there are not enough free teachers for one each'); if (fromExcused) m.push(fromExcused + ' invigilator' + (fromExcused > 1 ? 's' : '') + ' teach the subject being written'); if (m.length) o.warn = m.join('; ') + '.'; }
     });
     d.manual = false; prev = d.date;
   });
-  exGenerate.short = Object.keys(shortList);
-  return exGenerate.short.length;
+  exGenerate.warn = warnN;
+  return warnN;
 }
-function exShortMsg(){ const s = exGenerate.short || []; return s.length ? ' Not enough teachers in: ' + s.join(', ') + ' (add teachers to that department).' : ''; }
-function exTally(){ const c = {}; exR().days.forEach(d => EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => { c[id] = (c[id] || 0) + 1; })))); return c; }
+function exShortMsg(){ return exGenerate.warn ? ' Some classes could not be covered, check the red notes.' : ''; }
+function exTally(){ const c = {}; exR().days.forEach(d => EXS.forEach(s => Object.keys(d[s.id].inv).forEach(k => (d[s.id].inv[k] || []).forEach(id => { if (id) c[id] = (c[id] || 0) + 1; })))); return c; }
 function exWeeks(){ const m = {}; exR().days.forEach(d => { const k = dutyMonday(new Date(d.date + 'T00:00:00')); (m[k] = m[k] || []).push(d); }); return Object.keys(m).sort().map(k => ({ start: k, days: m[k].sort((a, b) => a.date.localeCompare(b.date)) })); }
 function exTab(t){ EX.tab = t; renderExamDuty(); }
 function renderExamDuty(){
   const root = document.getElementById('ex-root'); if (!root) return;
-  const isAdm = session && session.role === 'admin', R = exR();
+  const isAdm = session && session.role === 'admin';
   const tabs = [['plan', 'Timetable'], ['mine', 'My duty']].concat(isAdm ? [['fair', 'Fair share'], ['setup', 'Set up']] : []);
   if (!isAdm && (EX.tab === 'fair' || EX.tab === 'setup')) EX.tab = 'plan';
   let h = '<div class="hs-tabs">' + tabs.map(t => '<button type="button" class="hs-tab' + (EX.tab === t[0] ? ' on' : '') + '" onclick="exTab(\'' + t[0] + '\')">' + t[1] + '</button>').join('') + '</div>';
@@ -15056,79 +15087,192 @@ function renderExamDuty(){
   root.innerHTML = h;
 }
 function exFmt(iso){ return new Date(iso + 'T00:00:00').toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' }); }
-function exSesHtml(d, s, isAdm, R){
-  const o = d[s.id];
-  return '<div class="ex-ses"><div class="ex-sh">' + s.name + '</div>'
-    + (isAdm ? '<div class="ex-meta"><input type="text" placeholder="Exam (optional)" value="' + escapeHtml(o.label || '') + '" onchange="exField(\'' + d.date + '\',\'' + s.id + '\',\'label\',this.value)"><input type="text" placeholder="Time, e.g. ' + s.ph + '" value="' + escapeHtml(o.time || '') + '" onchange="exField(\'' + d.date + '\',\'' + s.id + '\',\'time\',this.value)"></div>' : ((o.label || o.time) ? '<div class="hint" style="margin:0 0 6px;">' + escapeHtml([o.label, o.time].filter(Boolean).join(' · ')) + '</div>' : ''))
-    + DEPTS.map(x => '<div class="ex-dept"><div class="ex-dn">' + escapeHtml(x.name) + '</div>' + Array.from({ length: R.perDept }, (_, i) => { const cur = (o[x.id] || [])[i] || ''; return isAdm ? '<select onchange="exSet(\'' + d.date + '\',\'' + s.id + '\',\'' + x.id + '\',' + i + ',this.value)">' + exOpts(x.id, d.date, cur) + '</select>' : '<div class="ex-nm' + (cur === (session.teacherId || '#') ? ' me' : '') + '">' + escapeHtml(cur ? exName(cur) : '—') + '</div>'; }).join('') + '</div>').join('') + '</div>';
-}
 function exPlanHtml(isAdm){
   const R = exR(), wks = exWeeks();
   if (!wks.length) return '<div class="panel"><div class="empty-state">No exam days yet.' + (isAdm ? ' Open <b>Set up</b>, choose the Monday the exams start and press <b>Add exam days</b>.' : '') + '</div></div>';
   let wi = wks.findIndex(w => w.start === EX.wk); if (wi < 0){ const today = dutyMonday(new Date()); wi = Math.max(0, wks.findIndex(w => w.start >= today)); if (wi < 0) wi = wks.length - 1; EX.wk = wks[wi].start; }
-  const w = wks[wi];
-  let h = '<div class="hs-pager" style="justify-content:space-between;margin:0 0 8px;"><button class="btn btn-sm" ' + (wi ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi - 1] || {}).start + '\';renderExamDuty()">‹ Earlier</button><b>Week of ' + dutyFmt(w.start) + '</b><button class="btn btn-sm" ' + (wi < wks.length - 1 ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi + 1] || {}).start + '\';renderExamDuty()">Later ›</button></div>';
-  h += '<div class="ex-days">' + w.days.map(d => '<div class="ex-day"><div class="ex-dh"><b>' + exFmt(d.date) + '</b>' + (isAdm ? '<button class="btn btn-sm" title="Remove this day" onclick="exDelDay(\'' + d.date + '\')">×</button>' : '') + '</div>' + EXS.map(s => exSesHtml(d, s, isAdm, R)).join('') + '</div>').join('') + '</div>';
+  const w = wks[wi]; let di = w.days.findIndex(d => d.date === EX.day); if (di < 0){ di = 0; EX.day = w.days[0].date; }
+  const d = w.days[di], classes = exClasses();
+  let h = '<div class="hs-pager" style="justify-content:space-between;margin:0 0 8px;"><button class="btn btn-sm" ' + (wi ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi - 1] || {}).start + '\';EX.day=\'\';renderExamDuty()">‹ Earlier</button><b>Week of ' + dutyFmt(w.start) + '</b><button class="btn btn-sm" ' + (wi < wks.length - 1 ? '' : 'disabled') + ' onclick="EX.wk=\'' + (wks[wi + 1] || {}).start + '\';EX.day=\'\';renderExamDuty()">Later ›</button></div>';
+  h += '<div class="hs-tabs" style="margin-bottom:10px;">' + w.days.map(x => '<button type="button" class="hs-tab' + (x.date === d.date ? ' on' : '') + '" onclick="EX.day=\'' + x.date + '\';renderExamDuty()">' + escapeHtml(exDayName(x.date).slice(0, 3) + ' ' + new Date(x.date + 'T00:00:00').getDate()) + '</button>').join('') + '</div>';
+  h += '<datalist id="ex-subs">' + exSubjects().map(s => '<option value="' + escapeHtml(s) + '">').join('') + '</datalist>';
+  h += '<div class="ex-day"><div class="ex-dh"><b>' + exFmt(d.date) + '</b>' + (isAdm ? '<button class="btn btn-sm" onclick="exDelDay(\'' + d.date + '\')">Remove day</button>' : '') + '</div>';
+  EXS.forEach(s => { const o = d[s.id]; if (o.warn) h += '<div class="ex-warn">' + s.name + ': ' + escapeHtml(o.warn) + '</div>'; });
+  if (isAdm) h += '<div class="ex-all">' + EXS.map(s => '<div class="field"><label>' + s.name + ': same paper for every class</label><div style="display:flex;gap:6px;"><input type="text" list="ex-subs" id="ex-all-' + s.id + '" placeholder="e.g. Writing"><button class="btn btn-sm" onclick="exAll(\'' + d.date + '\',\'' + s.id + '\')">Apply</button></div></div>').join('') + EXS.map(s => '<div class="field"><label>' + s.name + ' time</label><input type="text" placeholder="' + s.ph + '" value="' + escapeHtml(d[s.id].time) + '" onchange="exField(\'' + d.date + '\',\'' + s.id + '\',this.value)"></div>').join('') + '</div>';
+  else h += '<div class="hint">' + EXS.map(s => s.name + (d[s.id].time ? ' ' + escapeHtml(d[s.id].time) : '')).join(' · ') + '</div>';
+  h += '<div style="overflow:auto;"><table class="ex-tbl"><thead><tr><th>Class</th>' + EXS.map(s => '<th>' + s.name + ' paper</th><th>' + s.name + ' invigilator</th>').join('') + '</tr></thead><tbody>'
+    + classes.map(c => '<tr><td><b>' + escapeHtml(c) + '</b></td>' + EXS.map(s => { const o = d[s.id], subj = o.papers[c] || '', inv = (o.inv[c] || []);
+      const paper = isAdm ? '<input type="text" list="ex-subs" value="' + escapeHtml(subj) + '" onchange="exPaper(\'' + d.date + '\',\'' + s.id + '\',\'' + escapeHtml(c) + '\',this.value)">' : escapeHtml(subj || '—');
+      const sel = !subj ? '<span class="hint">no paper</span>' : Array.from({ length: R.per }, (_, i) => { const cur = inv[i] || ''; return isAdm ? '<select onchange="exSet(\'' + d.date + '\',\'' + s.id + '\',\'' + escapeHtml(c) + '\',' + i + ',this.value)">' + exOpts(d.date, cur) + '</select>' : '<div class="ex-nm' + (cur === (session.teacherId || '#') ? ' me' : '') + '">' + escapeHtml(cur ? exName(cur) : '—') + '</div>'; }).join('');
+      return '<td>' + paper + '</td><td>' + sel + '</td>'; }).join('') + '</tr>').join('') + '</tbody></table></div></div>';
   return h;
 }
-function exOpts(deptId, iso, cur){
-  const people = deptPeople().filter(t => exOk(t, iso) || t.id === cur), mem = new Set(exPool(deptId, iso).map(t => t.id));
-  const a = people.filter(t => mem.has(t.id)).sort(dutyByName), b = people.filter(t => !mem.has(t.id)).sort(dutyByName);
+function exOpts(iso, cur){
+  const ok = exPeople(), ids = new Set(ok.map(t => t.id)), extra = (DATA.teachers || []).filter(t => t.id === cur && !ids.has(t.id));
   const o = t => '<option value="' + t.id + '"' + (t.id === cur ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>';
-  return '<option value="">— none —</option>' + a.map(o).join('') + (b.length ? '<optgroup label="Other departments">' + b.map(o).join('') + '</optgroup>' : '');
+  return '<option value="">— none —</option>' + ok.slice().sort(dutyByName).map(o).join('') + extra.map(o).join('');
 }
 function exMineList(tid){
   const out = [];
-  exSorted().forEach(d => EXS.forEach(s => { const dp = DEPTS.find(x => (d[s.id][x.id] || []).indexOf(tid) >= 0); if (dp) out.push({ d, s, dp, o: d[s.id] }); }));
+  exSorted().forEach(d => EXS.forEach(s => { const o = d[s.id]; Object.keys(o.inv).forEach(c => { if ((o.inv[c] || []).indexOf(tid) >= 0) out.push({ d, s, c, o }); }); }));
   return out;
 }
 function exMineHtml(isAdm){
   let tid = session && session.teacherId || '';
-  if (isAdm){ const ppl = deptPeople().slice().sort(dutyByName); if (!EX.who && ppl[0]) EX.who = ppl[0].id; tid = EX.who; }
-  let h = isAdm ? '<div class="hs-lh"><select onchange="EX.who=this.value;renderExamDuty()">' + deptPeople().slice().sort(dutyByName).map(t => '<option value="' + t.id + '"' + (t.id === tid ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>').join('') + '</select></div>' : '';
+  if (isAdm){ const ppl = exPeople().slice().sort(dutyByName); if (!EX.who && ppl[0]) EX.who = ppl[0].id; tid = EX.who; }
+  let h = isAdm ? '<div class="hs-lh"><select onchange="EX.who=this.value;renderExamDuty()">' + exPeople().slice().sort(dutyByName).map(t => '<option value="' + t.id + '"' + (t.id === tid ? ' selected' : '') + '>' + escapeHtml(t.name) + '</option>').join('') + '</select></div>' : '';
   const mine = exMineList(tid);
   if (!mine.length) return h + '<div class="panel"><div class="empty-state">' + (isAdm ? 'This teacher has no invigilation duty.' : 'You have no invigilation duty yet.') + '</div></div>';
   const today = dutyISO(new Date());
-  return h + '<div class="ex-days">' + mine.map(m => '<div class="ex-day' + (m.d.date < today ? ' past' : '') + '"><div class="ex-dh"><b>' + exFmt(m.d.date) + ' · ' + m.s.name + '</b></div><div class="ex-dn">Invigilate: ' + escapeHtml(m.dp.name) + '</div>' + ((m.o.label || m.o.time) ? '<div class="hint" style="margin:4px 0 0;">' + escapeHtml([m.o.label, m.o.time].filter(Boolean).join(' · ')) + '</div>' : '') + '<div class="hint" style="margin:6px 0 0;">With: ' + escapeHtml((m.o[m.dp.id] || []).filter(x => x !== tid).map(exName).join(', ') || 'no one else') + '</div></div>').join('') + '</div>';
+  return h + '<div class="ex-days">' + mine.map(m => '<div class="ex-day' + (m.d.date < today ? ' past' : '') + '"><div class="ex-dh"><b>' + exFmt(m.d.date) + ' · ' + m.s.name + '</b></div><div class="ex-dn">Invigilate: ' + escapeHtml(m.c) + '</div><div class="hint" style="margin:4px 0 0;">' + escapeHtml([m.o.papers[m.c], m.o.time].filter(Boolean).join(' · ')) + '</div></div>').join('') + '</div>';
 }
 function exFairHtml(){
-  const c = exTally(), ppl = deptPeople().slice().sort((a, b) => (c[b.id] || 0) - (c[a.id] || 0) || dutyByName(a, b)), max = Math.max(1, ...ppl.map(t => c[t.id] || 0)), days = exR().days.length;
+  const c = exTally(), ppl = exPeople().slice().sort((a, b) => (c[b.id] || 0) - (c[a.id] || 0) || dutyByName(a, b)), max = Math.max(1, ...ppl.map(t => c[t.id] || 0)), days = exR().days.length;
   if (!days) return '<div class="panel"><div class="empty-state">Add exam days first.</div></div>';
-  return '<div class="panel"><h3 style="margin-top:0;">Sessions on duty per teacher (' + days + ' exam days, ' + (days * 2) + ' sessions)</h3><div class="ex-fair">' + ppl.map(t => '<div class="ex-fr"><span>' + escapeHtml(t.name) + '</span><span class="ex-bar"><i style="width:' + Math.round((c[t.id] || 0) / max * 100) + '%"></i></span><b>' + (c[t.id] || 0) + '</b></div>').join('') + '</div></div>';
+  return '<div class="panel"><h3 style="margin-top:0;">Sessions on duty per teacher (' + days + ' exam days)</h3><div class="ex-fair">' + ppl.map(t => '<div class="ex-fr"><span>' + escapeHtml(t.name) + '</span><span class="ex-bar"><i style="width:' + Math.round((c[t.id] || 0) / max * 100) + '%"></i></span><b>' + (c[t.id] || 0) + '</b></div>').join('') + '</div></div>';
 }
 function exSetupHtml(){
-  const R = exR(), mon = dutyMonday(new Date()), ppl = deptPeople().slice().sort(dutyByName);
-  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Teachers per department each session</label><select onchange="exPer(this.value)">' + [1, 2, 3, 4].map(n => '<option' + (R.perDept === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button></div><p class="hint">Every exam day has a Morning and an Afternoon session. Each department gets teachers from its own list (see Departments, built from the classes and subjects in Teacher Accounts), nobody is in two departments at the same time, and the teacher with the fewest sessions so far goes first. A teacher who did the morning is given the afternoon only when the department has no one else free. Names you change by hand stay when you rebuild the empty days.</p></div>'
+  const R = exR(), mon = dutyMonday(new Date()), ppl = (typeof deptPeople === 'function' ? deptPeople() : []).sort(dutyByName), all = exAllClasses(), on = exClasses();
+  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Invigilators per class</label><select onchange="exPer(this.value)">' + [1, 2].map(n => '<option' + (R.per === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button></div><p class="hint">Each day has a Morning and an Afternoon session. Monday is pre-filled with Writing (morning) and Dictation (afternoon) for every class. For the other days, open the day on the Timetable tab and type the paper for each class (or use "same paper for every class"), then press <b>Fill days without hand changes</b> below to pick invigilators.</p><p class="hint">Rules: class teachers take part like everyone else; a teacher whose subject is being written that session is left free (unless there are not enough other teachers); duties are shared fairly.</p></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Actions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn" onclick="exRun(true)">Fill days without hand changes</button><button class="btn" onclick="exRun(false)">Rebuild every day</button><button class="btn" onclick="exSend()">Send to teachers</button><button class="btn" onclick="exPrint()">Print</button><button class="btn" onclick="exClear()">Clear everything</button></div></div>'
+    + '<div class="hs-form"><h3 style="margin:0 0 6px;">Classes writing exams</h3><div class="ex-ex">' + all.map(c => '<label><input type="checkbox" ' + (on.indexOf(c) >= 0 ? 'checked ' : '') + 'onchange="exClassOn(\'' + escapeHtml(c) + '\',this.checked)"> ' + escapeHtml(c) + '</label>').join('') + '</div></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Not invigilating</h3><p class="hint" style="margin-top:0;">Tick anyone who should be left out (for example the head or someone on leave).</p><div class="ex-ex">' + ppl.map(t => '<label><input type="checkbox" ' + ((R.exclude || []).indexOf(t.id) >= 0 ? 'checked ' : '') + 'onchange="exExclude(\'' + t.id + '\',this.checked)"> ' + escapeHtml(t.name) + '</label>').join('') + '</div></div>';
 }
-function exPer(n){ exR().perDept = Math.max(1, Math.min(4, +n || 2)); exSave(); renderExamDuty(); }
+function exPer(n){ exR().per = Math.max(1, Math.min(2, +n || 1)); exSave(); renderExamDuty(); }
+function exClassOn(c, on){ const R = exR(); if (!R.classes.length) R.classes = exAllClasses(); R.classes = R.classes.filter(x => x !== c); if (on) R.classes.push(c); exSave(); }
 function exAddDays(){
   const s = (document.getElementById('ex-start') || {}).value, n = +(document.getElementById('ex-weeks') || {}).value || 1; if (!s){ toast('Pick the first Monday.'); return; }
-  const R = exR(), start = dutyMonday(new Date(s + 'T00:00:00')); let added = 0;
-  for (let w = 0; w < n; w++) for (let d = 0; d < 5; d++){ const iso = dutyAdd(start, w * 7 + d); if (!R.days.some(x => x.date === iso)){ R.days.push(exFix({ date: iso, manual: false })); added++; } }
-  exGenerate(true); EX.wk = start; EX.tab = 'plan'; exSave(); toast(added + ' exam days added and teachers picked.' + exShortMsg()); renderExamDuty();
+  const R = exR(), start = dutyMonday(new Date(s + 'T00:00:00')), cls = exClasses(); let added = 0;
+  for (let w = 0; w < n; w++) for (let k = 0; k < 5; k++){
+    const iso = dutyAdd(start, w * 7 + k); if (R.days.some(x => x.date === iso)) continue;
+    const d = exFix({ date: iso, manual: false });
+    if (k === 0) cls.forEach(c => { d.am.papers[c] = 'Writing'; d.pm.papers[c] = 'Dictation'; });
+    R.days.push(d); added++;
+  }
+  exGenerate(true); EX.wk = start; EX.day = ''; EX.tab = 'plan'; exSave(); toast(added + ' exam days added. Monday is Writing and Dictation; fill in the other days.' + exShortMsg()); renderExamDuty();
 }
 function exRun(keep){ if (!keep && !confirm('Rebuild every day? Names you changed by hand will be replaced.')) return; if (!keep) exR().days.forEach(d => { d.manual = false; }); exGenerate(keep); exSave(); toast('Done.' + exShortMsg()); EX.tab = 'plan'; renderExamDuty(); }
-function exField(date, ses, f, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[ses][f] = v.trim(); exSave(); }
-function exSet(date, ses, dept, i, v){ const d = exR().days.find(x => x.date === date); if (!d) return; const arr = d[ses][dept] = d[ses][dept] || []; while (arr.length <= i) arr.push(''); arr[i] = v; d[ses][dept] = arr.filter((x, k) => x || k < i); d.manual = true; exSave(); }
+function exField(date, ses, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[ses].time = v.trim(); exSave(); }
+function exPaper(date, ses, cls, v){ const d = exR().days.find(x => x.date === date); if (!d) return; v = v.trim(); if (v) d[ses].papers[cls] = v; else delete d[ses].papers[cls]; exGenerate(true); exSave(); renderExamDuty(); }
+function exAll(date, ses){ const d = exR().days.find(x => x.date === date), v = ((document.getElementById('ex-all-' + ses) || {}).value || '').trim(); if (!d) return; exClasses().forEach(c => { if (v) d[ses].papers[c] = v; else delete d[ses].papers[c]; }); exSave(); exGenerate(true); exSave(); renderExamDuty(); }
+function exSet(date, ses, cls, i, v){ const d = exR().days.find(x => x.date === date); if (!d) return; const arr = d[ses].inv[cls] = d[ses].inv[cls] || []; while (arr.length <= i) arr.push(''); arr[i] = v; d[ses].inv[cls] = arr.filter((x, k) => x || k < i); d.manual = true; exSave(); }
 function exDelDay(date){ const R = exR(); R.days = R.days.filter(d => d.date !== date); exSave(); renderExamDuty(); }
 function exExclude(id, on){ const R = exR(); R.exclude = (R.exclude || []).filter(x => x !== id); if (on) R.exclude.push(id); exSave(); }
 function exClear(){ if (!confirm('Delete every exam day and name? This cannot be undone.')) return; const R = exR(); R.days = []; exSave(); renderExamDuty(); }
 function exText(tid){
-  const mine = exMineList(tid).map(m => exFmt(m.d.date) + ' ' + m.s.name + ' – ' + m.dp.name + (m.o.time ? ' (' + m.o.time + ')' : '') + (m.o.label ? ', ' + m.o.label : ''));
+  const mine = exMineList(tid).map(m => exFmt(m.d.date) + ' ' + m.s.name + ' – ' + m.c + (m.o.papers[m.c] ? ' (' + m.o.papers[m.c] + ')' : '') + (m.o.time ? ' ' + m.o.time : ''));
   return mine.length ? 'EXAM INVIGILATION DUTY\n' + mine.join('\n') + '\nThank you for taking your turn.' : '';
 }
 function exSend(){
-  const tids = new Set(); exR().days.forEach(d => EXS.forEach(s => DEPTS.forEach(x => (d[s.id][x.id] || []).forEach(id => tids.add(id))))); let n = 0;
+  const tids = new Set(); exR().days.forEach(d => EXS.forEach(s => Object.keys(d[s.id].inv).forEach(c => (d[s.id].inv[c] || []).forEach(id => { if (id) tids.add(id); })))); let n = 0;
   tids.forEach(id => { const t = (DATA.teachers || []).find(x => x.id === id), txt = exText(id); if (!t || !txt) return; const rec = msgSend(t.id, t.name, txt, 'message'); if (rec){ n++; try{ msgNotify(rec); }catch(e){} } });
   toast(n ? 'Sent to ' + n + ' teachers.' : 'Nothing to send yet.');
 }
 function exPrint(){
-  const rows = exSorted().map(d => EXS.map((s, k) => '<tr>' + (k ? '' : '<td rowspan="2">' + escapeHtml(exFmt(d.date)) + '</td>') + '<td>' + s.name + '</td><td>' + escapeHtml([d[s.id].label, d[s.id].time].filter(Boolean).join(' · ')) + '</td>' + DEPTS.map(x => '<td>' + escapeHtml((d[s.id][x.id] || []).map(exName).join(' & ')) + '</td>').join('') + '</tr>').join('')).join('');
+  const cls = exClasses();
+  const body = exSorted().map(d => '<h3>' + escapeHtml(exFmt(d.date)) + '</h3><table><thead><tr><th>Class</th>' + EXS.map(s => '<th>' + s.name + ' paper' + (d[s.id].time ? ' (' + escapeHtml(d[s.id].time) + ')' : '') + '</th><th>' + s.name + ' invigilator</th>').join('') + '</tr></thead><tbody>'
+    + cls.map(c => '<tr><td>' + escapeHtml(c) + '</td>' + EXS.map(s => '<td>' + escapeHtml(d[s.id].papers[c] || '') + '</td><td>' + escapeHtml((d[s.id].inv[c] || []).map(exName).join(' & ')) + '</td>').join('') + '</tr>').join('') + '</tbody></table>').join('');
   const win = window.open('', '_blank'); if (!win){ toast('Allow pop-ups to print.'); return; }
-  win.document.write('<html><head><title>Exam invigilation</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px;text-align:left;font-size:13px}th{background:#eee}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || '') + ' – Exam invigilation timetable</h2><table><thead><tr><th>Day</th><th>Session</th><th>Exam / time</th>' + DEPTS.map(x => '<th>' + x.name + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table></body></html>');
+  win.document.write('<html><head><title>Exam invigilation</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%;margin-bottom:18px}td,th{border:1px solid #000;padding:5px 8px;text-align:left;font-size:12.5px}th{background:#eee}h3{margin:14px 0 6px;page-break-before:auto}</style></head><body><h2>' + escapeHtml((DATA.meta && DATA.meta.schoolName) || '') + ' – Exam invigilation timetable</h2>' + body + '</body></html>');
   win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+}
+
+
+/* ---------- Leaderboard: best students across the school (by class, level, subject, term or mock) ---------- */
+const LB = { src:'cur', level:'', cls:'', subj:'', min:3, q:'', tab:'board', lim:30 };
+function lbSources(){
+  const out = [{ k:'cur', t:'This term' }], seen = {};
+  an2Classes().forEach(it => { const h = (it.c.termHistory || []).slice(-1)[0]; if (h){ const l = ((h.term || '') + ' ' + (h.year || '')).trim() || 'Last term'; if (!seen[l]){ seen[l] = 1; out.push({ k:'hist:' + l, t:l }); } } });
+  try{ mockListSorted().forEach(m => out.push({ k:'mock:' + m.id, t:m.name })); }catch(e){}
+  return out;
+}
+function lbRows(){
+  const rows = [], H = (DATA.houses && DATA.houses.mem) || {};
+  an2Classes().forEach(it => {
+    const lev = (typeof deptOfClass === 'function') ? deptOfClass(it.label) : '';
+    if (LB.level && lev !== LB.level) return;
+    if (LB.cls && it.key !== LB.cls) return;
+    const c = it.c, subs = (c.subjects || []).slice();
+    let students = c.students || [], getScore = (s, sub) => an2Term(s.scores && s.scores[sub]);
+    if (LB.src.indexOf('hist:') === 0){
+      const h = (c.termHistory || []).slice(-1)[0], lab = ((h && h.term || '') + ' ' + (h && h.year || '')).trim() || 'Last term';
+      if (!h || lab !== LB.src.slice(5)) return;
+      students = h.students || []; (h.subjects || []).forEach(x => { if (subs.indexOf(x) < 0) subs.push(x); });
+    } else if (LB.src.indexOf('mock:') === 0){
+      const id = LB.src.slice(5); getScore = (s, sub) => mockScoreOf(s, sub, id);
+    }
+    students.forEach(s => {
+      const sc = {}; subs.forEach(sub => { const v = getScore(s, sub); if (v !== null && v !== undefined && !isNaN(v)) sc[sub] = v; });
+      let use = Object.keys(sc); if (LB.subj){ use = use.filter(x => x === LB.subj); }
+      if (!use.length) return;
+      if (!LB.subj && use.length < LB.min) return;
+      const avg = an2R(use.reduce((a, x) => a + sc[x], 0) / use.length);
+      const bs = use.slice().sort((a, b) => sc[b] - sc[a])[0];
+      rows.push({ name: s.name, cls: it.label, ckey: it.key, n: use.length, avg, sc, best: bs, bestV: sc[bs], house: s.studentId ? H['s:' + s.studentId] : '' });
+    });
+  });
+  rows.sort((a, b) => b.avg - a.avg || b.n - a.n || String(a.name).localeCompare(String(b.name)));
+  let r = 0; rows.forEach((x, i) => { if (i === 0 || x.avg !== rows[i - 1].avg) r = i + 1; x.rank = r; });
+  return rows;
+}
+function lbSet(k, v){ LB[k] = v; if (k === 'level'){ LB.cls = ''; } if (k !== 'q') LB.lim = 30; renderLeaderboard(); }
+function lbHouseDot(id){ const h = HOUSES.find(x => x.id === id); return h ? '<i class="lb-hd" style="background:' + h.c + '" title="' + h.name + ' house"></i>' : ''; }
+function lbMedal(r){ return r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : r; }
+function lbScope(){
+  const s = lbSources().find(x => x.k === LB.src), it = LB.cls ? an2Classes().find(x => x.key === LB.cls) : null;
+  return [s ? s.t : '', it ? it.label : (LB.level ? (DEPTS.find(d => d.id === LB.level) || {}).name : 'Whole school'), LB.subj || 'All subjects'].join(' · ');
+}
+function lbSubjectList(){
+  const set = {}; an2Classes().forEach(it => { if (LB.level && deptOfClass(it.label) !== LB.level) return; if (LB.cls && it.key !== LB.cls) return; (it.c.subjects || []).forEach(s => { set[s] = 1; }); });
+  return Object.keys(set).sort();
+}
+function renderLeaderboard(){
+  const root = document.getElementById('lb-root'); if (!root) return;
+  const items = an2Classes();
+  if (!items.length){ root.innerHTML = '<div class="panel"><div class="empty-state">No class results yet. Enter or import scores under Academic Records first.</div></div>'; return; }
+  const srcs = lbSources(), rows = lbRows();
+  const clsOpts = items.filter(it => !LB.level || deptOfClass(it.label) === LB.level);
+  const sel = (id, v, opts) => '<select onchange="lbSet(\'' + id + '\',this.value)">' + opts.map(o => '<option value="' + escapeHtml(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select>';
+  let h = '<div class="lb-filters">'
+    + '<div class="field"><label>Results</label>' + sel('src', LB.src, srcs.map(s => [s.k, s.t])) + '</div>'
+    + '<div class="field"><label>Level</label>' + sel('level', LB.level, [['', 'All levels']].concat(DEPTS.map(d => [d.id, d.name]))) + '</div>'
+    + '<div class="field"><label>Class</label>' + sel('cls', LB.cls, [['', 'All classes']].concat(clsOpts.map(it => [it.key, it.label]))) + '</div>'
+    + '<div class="field"><label>Subject</label>' + sel('subj', LB.subj, [['', 'All subjects (average)']].concat(lbSubjectList().map(s => [s, s]))) + '</div>'
+    + (LB.subj ? '' : '<div class="field"><label>Scores needed</label>' + sel('min', LB.min, [1, 2, 3, 4, 5, 6, 8].map(n => [n, 'At least ' + n + ' subjects'])) + '</div>')
+    + '<div class="field"><label>Find a name</label><input type="text" value="' + escapeHtml(LB.q) + '" placeholder="Type a name" oninput="LB.q=this.value;lbSearchOnly()"></div></div>';
+  h += '<div class="hs-tabs">' + [['board', 'Leaderboard'], ['class', 'Best in each class'], ['subject', 'Best in each subject']].map(t => '<button type="button" class="hs-tab' + (LB.tab === t[0] ? ' on' : '') + '" onclick="lbSet(\'tab\',\'' + t[0] + '\')">' + t[1] + '</button>').join('') + '<button class="btn btn-sm" style="margin-left:auto;" onclick="lbCsv()">Download CSV</button></div>';
+  h += '<p class="hint" style="margin:6px 2px 10px;">' + escapeHtml(lbScope()) + ' · ' + rows.length + ' student' + (rows.length === 1 ? '' : 's') + ' ranked. Ranked by average score; students on the same average share a rank.</p>';
+  if (!rows.length) return void (root.innerHTML = h + '<div class="panel"><div class="empty-state">No students match. Try fewer required subjects or another class.</div></div>');
+  if (LB.tab === 'board') h += lbBoardHtml(rows);
+  else if (LB.tab === 'class') h += lbClassHtml(rows);
+  else h += lbSubjectHtml();
+  root.innerHTML = h;
+}
+function lbSearchOnly(){ const el = document.getElementById('lb-list'); if (el) el.innerHTML = lbListHtml(lbRows()); }
+function lbBoardHtml(rows){
+  const top = rows.filter(r => r.rank <= 3).slice(0, 6);
+  const spot = '<div class="lb-spot">' + top.map(r => '<div class="lb-card r' + Math.min(r.rank, 3) + '"><div class="lb-m">' + lbMedal(r.rank) + '</div><b>' + escapeHtml(r.name) + '</b><span>' + escapeHtml(r.cls) + ' ' + lbHouseDot(r.house) + '</span><em>' + r.avg + (LB.subj ? '' : '%') + '</em></div>').join('') + '</div>';
+  return spot + '<div class="panel" style="padding:0;overflow:hidden;"><div id="lb-list">' + lbListHtml(rows) + '</div></div>';
+}
+function lbListHtml(rows){
+  const q = LB.q.trim().toUpperCase(), f = q ? rows.filter(r => String(r.name).toUpperCase().indexOf(q) >= 0) : rows, shown = q ? f : f.slice(0, LB.lim);
+  return '<div style="overflow:auto;"><table class="lb-tbl"><thead><tr><th>#</th><th>Name</th><th>Class</th><th class="n">' + (LB.subj ? 'Score' : 'Average') + '</th><th class="n">Subjects</th><th>Strongest</th></tr></thead><tbody>'
+    + shown.map(r => '<tr class="' + (r.rank <= 3 ? 'top' : '') + '"><td>' + lbMedal(r.rank) + '</td><td>' + lbHouseDot(r.house) + escapeHtml(r.name) + '</td><td>' + escapeHtml(r.cls) + '</td><td class="n"><b>' + r.avg + '</b></td><td class="n">' + r.n + '</td><td>' + (LB.subj ? '' : escapeHtml(r.best) + ' ' + r.bestV) + '</td></tr>').join('') + '</tbody></table></div>'
+    + (!q && f.length > shown.length ? '<div style="padding:10px;text-align:center;"><button class="btn btn-sm" onclick="LB.lim+=30;renderLeaderboard()">Show more (' + (f.length - shown.length) + ' left)</button></div>' : '')
+    + (q && !f.length ? '<div class="empty-state" style="padding:14px;">No student with that name.</div>' : '');
+}
+function lbClassHtml(rows){
+  const by = {}; rows.forEach(r => { (by[r.ckey] = by[r.ckey] || []).push(r); });
+  return '<div class="lb-grid">' + an2Classes().filter(it => by[it.key]).map(it => { const l = by[it.key].filter(r => { const t = by[it.key].slice(0, 3); return t.indexOf(r) >= 0; });
+    return '<div class="panel lb-cc"><h4>' + escapeHtml(it.label) + '</h4>' + l.map((r, i) => '<div class="lb-line"><span>' + lbMedal(i + 1) + '</span><b>' + escapeHtml(r.name) + '</b><em>' + r.avg + '</em></div>').join('') + '<div class="hint">' + by[it.key].length + ' ranked</div></div>'; }).join('') + '</div>';
+}
+function lbSubjectHtml(){
+  const save = LB.subj, subs = lbSubjectList(); let h = '<div class="lb-grid">';
+  subs.forEach(sub => { LB.subj = sub; const r = lbRows().slice(0, 3); if (r.length) h += '<div class="panel lb-cc"><h4>' + escapeHtml(sub) + '</h4>' + r.map(x => '<div class="lb-line"><span>' + lbMedal(x.rank) + '</span><b>' + escapeHtml(x.name) + ' <small>' + escapeHtml(x.cls) + '</small></b><em>' + x.avg + '</em></div>').join('') + '</div>'; });
+  LB.subj = save; return h + '</div>';
+}
+function lbCsv(){
+  const rows = lbRows(); an2Download('leaderboard.csv', [['rank', 'name', 'class', LB.subj ? 'score' : 'average', 'subjects_counted', 'strongest_subject', 'strongest_score']].concat(rows.map(r => [r.rank, r.name, r.cls, r.avg, r.n, r.best, r.bestV])));
 }
 
 /* ---------- Back button: step back through the pages used inside the app (not out of the site) ---------- */
