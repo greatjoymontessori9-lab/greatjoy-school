@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.21-f';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.21-g';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V||localStorage.getItem('gj_upd_bad')===V)return;
@@ -12793,7 +12793,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.21-f';
+const APP_VERSION = '2026.11.21-g';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -14368,7 +14368,7 @@ function gjNavBuild(){
   });
   sb.appendChild(frag);
 }
-function gjNavToggle(w, force){ const open = force === undefined ? !w.classList.contains('open') : force; w.classList.toggle('open', open); }
+function gjNavToggle(w, force, keep){ const open = force === undefined ? !w.classList.contains('open') : force; if (open && !keep) document.querySelectorAll('#sidebar .nav-grp.open').forEach(o => { if (o !== w) o.classList.remove('open'); }); w.classList.toggle('open', open); }
 function gjNavRefresh(){
   document.querySelectorAll('#sidebar .nav-grp').forEach(w => {
     const any = [...w.querySelectorAll('.nav-item')].some(el => el.style.display !== 'none' && !el.classList.contains('nav-nomatch'));
@@ -14378,7 +14378,7 @@ function gjNavRefresh(){
 function gjNavSearch(q){
   q = String(q || '').trim().toLowerCase();
   document.querySelectorAll('#sidebar .nav-item').forEach(el => el.classList.toggle('nav-nomatch', !!q && el.textContent.toLowerCase().indexOf(q) < 0));
-  document.querySelectorAll('#sidebar .nav-grp').forEach(w => { if (q) gjNavToggle(w, true); else gjNavToggle(w, !!w.querySelector('.nav-item.active')); });
+  document.querySelectorAll('#sidebar .nav-grp').forEach(w => { if (q) gjNavToggle(w, true, true); else gjNavToggle(w, !!w.querySelector('.nav-item.active'), true); });
   gjNavRefresh();
 }
 function gjNavActive(name){
@@ -14976,13 +14976,63 @@ function renderHouses(){
   let h = '<div class="hs-tabs">' + tabs.map(t => '<button type="button" class="hs-tab' + (HS.tab === t[0] ? ' on' : '') + '" onclick="houseTab(\'' + t[0] + '\')">' + t[1] + '</button>').join('') + '</div>';
   const me = houseMeKey(), mine = houseInfo(houseOf(me));
   if (mine) h += '<div class="hs-me" style="background:' + mine.c + ';color:' + mine.ink + ';">You are in <b>' + escapeHtml(houseName(mine.id)) + '</b> house</div>';
-  if (HS.tab === 'board') h += houseBoardHtml();
-  else if (HS.tab === 'members') h += houseMembersHtml(isAdm);
-  else if (HS.tab === 'history') h += houseHistoryHtml(isAdm);
+  if (HS.tab === 'board') h += houseBoardHtml() + '<div style="margin-top:10px;"><button class="btn" onclick="housePrintBoard()">Print scoreboard</button></div>';
+  else if (HS.tab === 'members') h += housePrintBar() + houseMembersHtml(isAdm);
+  else if (HS.tab === 'history') h += houseHistoryHtml(isAdm) + '<div style="margin-top:10px;"><button class="btn" onclick="housePrintHistory()">Print results</button></div>';
   else if (HS.tab === 'points' && isAdm) h += housePointsHtml();
   else if (HS.tab === 'setup' && isAdm) h += houseSetupHtml();
   root.innerHTML = h;
 }
+/* ---- Houses: print with filters ---- */
+HS.pf = { house:'', who:'students', cls:'' };
+function housePfClasses(){ const set = {}; (DATA.students || []).forEach(s => { if (s.status && s.status !== 'active') return; const c = canonicalizeClassName(s.class) || s.class; if (c) set[c] = 1; }); return Object.keys(set).sort((a, b) => a.localeCompare(b, undefined, { numeric:true })); }
+function housePrintBar(){
+  const f = HS.pf, sel = (id, opts, cur, on) => '<select id="' + id + '" onchange="' + on + '">' + opts.map(o => '<option value="' + escapeHtml(o[0]) + '"' + (cur === o[0] ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select>';
+  return '<div class="hs-form" style="margin:10px 0;"><div style="font-weight:700;margin-bottom:6px;">Print a list</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
+    + sel('hpf-h', [['', 'All houses']].concat(HOUSES.map(x => [x.id, houseName(x.id)])), f.house, "HS.pf.house=this.value")
+    + sel('hpf-w', [['students', 'Students'], ['staff', 'Teachers & staff'], ['all', 'Everyone']], f.who, "HS.pf.who=this.value;renderHouses()")
+    + (f.who === 'staff' ? '' : sel('hpf-c', [['', 'All classes']].concat(housePfClasses().map(c => [c, c])), f.cls, "HS.pf.cls=this.value"))
+    + '<button class="btn btn-primary" onclick="housePrintList()">Print</button></div></div>';
+}
+function housePrintWin(title, sub, body){
+  const win = window.open('', '_blank'); if (!win){ toast('Allow pop-ups to print.'); return; }
+  win.document.write('<html><head><title>' + escapeHtml(title) + '</title><style>@page{size:A4 portrait;margin:14mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0;padding:18px}.sch{text-align:center;font-weight:800;font-size:18px}.sub{text-align:center;font-size:12px;margin:2px 0 12px}h1{font-size:17px;text-align:center;margin:6px 0 10px}table{border-collapse:collapse;width:100%;margin-bottom:6px}th,td{border:1px solid #555;padding:6px 9px;font-size:13px;text-align:left}th{background:#eee}.hh{padding:8px 12px;font-weight:800;font-size:15px;margin:14px 0 0;border:1px solid #555;border-bottom:0}.pb{page-break-before:always}.pt{font-size:20px;font-weight:800}</style></head><body><div class="sch">' + escapeHtml(((DATA.meta && DATA.meta.schoolName) || '').toUpperCase()) + '</div><div class="sub">' + escapeHtml(sub) + '</div><h1>' + escapeHtml(title) + '</h1>' + body + '</body></html>');
+  win.document.close(); win.focus(); setTimeout(() => win.print(), 350);
+}
+function housePrintList(){
+  const f = HS.pf, H = houseData(), alive = {}; housePeople().forEach(p => { alive[p.key] = p; });
+  const stu = {}; (DATA.students || []).forEach(s => { stu['s:' + s.id] = s; });
+  const tch = {}; (DATA.teachers || []).forEach(t => { tch['t:' + t.id] = t; }); (DATA.staff || []).forEach(o => { tch['o:' + o.id] = o; });
+  const houses = HOUSES.filter(x => !f.house || x.id === f.house); let body = '', total = 0, first = true;
+  houses.forEach(x => {
+    const rows = Object.keys(H.mem).filter(k => H.mem[k] === x.id && alive[k] && (f.who === 'all' || (f.who === 'students' ? alive[k].cat === 's' : alive[k].cat === 'p'))).map(k => {
+      const r = stu[k] || tch[k] || {}, isS = k[0] === 's';
+      return { name: r.name || '', cls: isS ? (canonicalizeClassName(r.class) || r.class || '') : '', sub: isS ? (canonicalizeClassName(r.class) || r.class || '') : (r.position || (k[0] === 't' ? 'Teacher' : 'Staff')) };
+    }).filter(r => !f.cls || f.who === 'staff' || (r.cls === f.cls)).sort((a, b) => String(a.sub).localeCompare(String(b.sub), undefined, { numeric:true }) || a.name.localeCompare(b.name));
+    total += rows.length;
+    body += '<div class="' + (first || houses.length === 1 ? '' : 'pb') + '"><div class="hh" style="background:' + x.c + ';color:' + x.ink + ';">' + escapeHtml(houseName(x.id)) + ' house · ' + rows.length + '</div><table><thead><tr><th style="width:36px;">No.</th><th>Name</th><th style="width:30%;">' + (f.who === 'staff' ? 'Position' : 'Class / Position') + '</th></tr></thead><tbody>'
+      + (rows.map((r, i) => '<tr><td>' + (i + 1) + '</td><td>' + escapeHtml(r.name) + '</td><td>' + escapeHtml(r.sub) + '</td></tr>').join('') || '<tr><td colspan="3">No one found</td></tr>') + '</tbody></table></div>';
+    first = false;
+  });
+  if (!total){ toast('Nobody matches these filters.'); return; }
+  const who = f.who === 'students' ? 'Students' : f.who === 'staff' ? 'Teachers & staff' : 'Everyone';
+  housePrintWin('House list', [who, f.house ? houseName(f.house) + ' house' : 'All houses', f.cls || (f.who === 'staff' ? '' : 'All classes')].filter(Boolean).join(' · '), body);
+}
+function housePrintBoard(){
+  const tot = houseTotals(HS.per), cnt = houseCounts(), cur = houseCurTerm();
+  const lab = { term: (cur.term || 'This term') + (cur.year ? ' ' + cur.year : ''), year: cur.year ? 'Year ' + cur.year : 'This year', all: 'All time' }[HS.per];
+  const rank = HOUSES.slice().sort((a, b) => tot[b.id] - tot[a.id]);
+  housePrintWin('House scoreboard', lab, '<table><thead><tr><th style="width:50px;">Rank</th><th>House</th><th style="width:20%;">Points</th></tr></thead><tbody>' + rank.map((x, i) => '<tr><td class="pt">' + (i + 1) + '</td><td style="background:' + x.c + ';color:' + x.ink + ';font-weight:800;">' + escapeHtml(houseName(x.id)) + '</td><td class="pt">' + tot[x.id] + '</td></tr>').join('') + '</tbody></table>');
+}
+function housePrintHistory(){
+  const ev = houseData().events.slice().filter(e => !HS.fYear || String(e.year || '') === HS.fYear).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!ev.length){ toast('No results to print.'); return; }
+  const tot = {}; HOUSES.forEach(x => { tot[x.id] = ev.reduce((a, e) => a + (Number((e.pts || {})[x.id]) || 0), 0); });
+  housePrintWin('House results', HS.fYear ? 'Year ' + HS.fYear : 'All years', '<table><thead><tr><th>Date</th><th>Event</th><th>Type</th>' + HOUSES.map(x => '<th style="background:' + x.c + ';color:' + x.ink + ';">' + escapeHtml(x.name) + '</th>').join('') + '</tr></thead><tbody>'
+    + ev.map(e => '<tr><td>' + escapeHtml(e.date || '') + '</td><td>' + escapeHtml(e.name) + '</td><td>' + escapeHtml(e.kind || '') + '</td>' + HOUSES.map(x => '<td>' + ((e.pts || {})[x.id] || 0) + '</td>').join('') + '</tr>').join('')
+    + '<tr><th colspan="3">Total</th>' + HOUSES.map(x => '<th>' + tot[x.id] + '</th>').join('') + '</tr></tbody></table>');
+}
+
 function houseBoardHtml(){
   const tot = houseTotals(HS.per), cnt = houseCounts(), cur = houseCurTerm();
   const rank = HOUSES.slice().sort((a, b) => tot[b.id] - tot[a.id]), max = Math.max(1, ...rank.map(x => tot[x.id]));
