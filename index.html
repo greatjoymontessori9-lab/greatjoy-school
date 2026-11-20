@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.21-g';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.21-h';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V||localStorage.getItem('gj_upd_bad')===V)return;
@@ -12793,7 +12793,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.21-g';
+const APP_VERSION = '2026.11.21-h';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -15585,5 +15585,24 @@ const UPDATE_URL = 'https://greatjoymontessori9-lab.github.io/greatjoy-school/';
 })();
 </script>
 
+<script id="gj-appwin">
+/* Offline copy opened from a file: offer to open it in its own app window (no tabs), with the school icon. */
+(function(){
+  try{
+    if (location.protocol !== 'file:' || window.self !== window.top || window.opener) return;
+    if (window.matchMedia && matchMedia('(display-mode: standalone)').matches) return;
+    if (/[?&]app=1/.test(location.search) || window.name === 'gjapp') return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.id = 'gj-appwin-btn'; b.textContent = 'Open as app window';
+    b.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:99998;padding:10px 16px;border-radius:999px;border:0;background:#16233D;color:#fff;font:600 13px system-ui,sans-serif;box-shadow:0 8px 22px rgba(0,0,0,.28);cursor:pointer;';
+    b.onclick = function(){
+      var w = Math.min(1280, screen.availWidth), h = Math.min(860, screen.availHeight);
+      var win = window.open(location.href.split('#')[0] + (location.search ? '&' : '?') + 'app=1', 'gjapp', 'popup=yes,width=' + w + ',height=' + h + ',left=' + Math.max(0, (screen.availWidth - w) / 2) + ',top=' + Math.max(0, (screen.availHeight - h) / 2));
+      if (win){ b.remove(); } else { b.textContent = 'Allow pop-ups, then tap again'; }
+    };
+    document.body.appendChild(b);
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
