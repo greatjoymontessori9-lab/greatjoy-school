@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><script>/*gj-early-update*/(function(){try{
-var B='2026.11.21-d';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
+var B='2026.11.21-e';if(/noupdate/.test(location.search)){localStorage.removeItem('gj_upd_ver');return;}var V=localStorage.getItem('gj_upd_ver');if(!V)return;
 var p=function(v){var m=/(\d+)\.(\d+)\.(\d+)-([a-z0-9]+)/i.exec(String(v||''));return m?[+m[1],+m[2],+m[3],m[4].toLowerCase()]:null;};
 var x=p(V),y=p(B);if(!x||!y)return;var newer=false;for(var i=0;i<3;i++){if(x[i]!==y[i]){newer=x[i]>y[i];break;}if(i===2)newer=x[3]>y[3];}
 if(!newer||sessionStorage.getItem('gj_upd_applied')===V||localStorage.getItem('gj_upd_bad')===V)return;
@@ -12793,7 +12793,7 @@ function ctAssign(level, cls, tid){
 }
 
 /* ===== GJ-STUDENT admin: PINs and parent updates ===== */
-const APP_VERSION = '2026.11.21-d';
+const APP_VERSION = '2026.11.21-e';
 let SA_ACCESS = {}, SA_FRESH = {}, SA_NEW = {}, SA_HIDE = false;
 function studentUrl(){ try{ return localStorage.getItem('gj_student_url') || ''; }catch(e){ return ''; } }
 function saveStudentUrl(){ try{ localStorage.setItem('gj_student_url', document.getElementById('sa-url').value.trim()); }catch(e){} }
@@ -15065,7 +15065,7 @@ const EXS = [{ id:'am', name:'Morning', ph:'9:00AM - 10:30AM' }, { id:'pm', name
 /* Pre-school to Basic 3 write their exams with their own class teachers. Invigilation rotation covers Basic 4 to 9 (Basic 6-9 are upstairs). */
 function exRotClass(c){ const d = deptOfClass(c); if (d === 'jhs') return true; if (d !== 'pri') return false; const m = String(c || '').match(/(\d+)/); return !!m && +m[1] >= 4; }
 function exLoc(c){ const d = deptOfClass(c), m = String(c || '').match(/(\d+)/); return (d === 'jhs' || (d === 'pri' && m && +m[1] >= 6)) ? 'Upstairs' : 'Classroom'; }
-const EX_ALIAS = [['RME', 'RELIGIOUSANDMORALEDUCATION', 'RELIGIOUSMORALEDUCATION', 'RELIGIOUSMORAL'], ['FANTE', 'GHANAIANLANGUAGE', 'GHANALANGUAGE', 'GHANAIAN'], ['COMPUTING', 'ICT', 'COMPUTERSTUDIES'], ['CREATIVEARTS', 'CREATIVEART', 'CARTS', 'CREATIVEARTSANDDESIGN'], ['ENGLISH', 'ENGLISHLANGUAGE', 'SPELLINGSANDWRITING', 'WRITING', 'DICTATION'], ['SCIENCE', 'INTEGRATEDSCIENCE'], ['SOCIAL', 'SOCIALSTUDIES'], ['MATHS', 'MATHEMATICS', 'MATH'], ['CAREERTECH', 'CAREERTECHNOLOGY']];
+const EX_ALIAS = [['RME', 'RELIGIOUSANDMORALEDUCATION', 'RELIGIOUSMORALEDUCATION', 'RELIGIOUSMORAL'], ['FANTE', 'GHANAIANLANGUAGE', 'GHANALANGUAGE', 'GHANAIAN'], ['COMPUTING', 'ICT', 'COMPUTERSTUDIES'], ['CREATIVEARTS', 'CREATIVEART', 'CARTS', 'CREATIVEARTSANDDESIGN'], ['ENGLISH', 'ENGLISHLANGUAGE', 'SPELLINGSANDWRITING', 'WRITING', 'DICTATION'], ['SCIENCE', 'INTEGRATEDSCIENCE'], ['SOCIAL', 'SOCIALSTUDIES'], ['MATHS', 'MATHEMATICS', 'MATH'], ['CAREERTECH', 'CAREERTECHNOLOGY', 'CAREERTECHNOLOGYCT'], ['FRENCH', 'FRANCAIS']];
 /* Exam Duty v2: class by class. Each exam day has a Morning and an Afternoon session; every class writing a paper in that session gets its own invigilator.
    Not used for invigilation: class teachers, anyone left out in Set up, and (when possible) teachers whose subject is the one being written. */
 function exR(){ const r = DATA.examDuty = DATA.examDuty || {}; r.per = r.per || 1; r.exclude = r.exclude || []; r.days = r.days || []; r.classes = r.classes || []; r.days.forEach(exFix); return r; }
@@ -15182,13 +15182,39 @@ function exFairHtml(){
 }
 function exSetupHtml(){
   const R = exR(), mon = dutyMonday(new Date()), ppl = (typeof deptPeople === 'function' ? deptPeople() : []).sort(dutyByName), all = exAllClasses(), on = exClasses();
-  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Invigilators per class</label><select onchange="exPer(this.value)">' + [1, 2].map(n => '<option' + (R.per === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button><button class="btn" onclick="exUpperPrimary()">Use the Upper Primary timetable (Basic 4-6)</button></div><p class="hint">Pre-school to Basic 3 are handled by their own class teachers, so only Basic 4 to 9 are here (Basic 6 to 9 are upstairs). Each day has a Morning (9:00-10:30) and an Afternoon (1:00-2:30) session. Monday is pre-filled with Writing (morning) and Dictation (afternoon) for every class. For the other days, open the day on the Timetable tab and type the paper for each class (or use "same paper for every class"), then press <b>Fill days without hand changes</b> below to pick invigilators.</p><p class="hint">Rules: class teachers take part like everyone else; a teacher whose subject is being written that session is left free (unless there are not enough other teachers); duties are shared fairly.</p></div>'
+  return '<div class="hs-form"><h3 style="margin:0 0 6px;">Add exam days</h3><div class="hs-fg"><div class="field"><label>First Monday of the exams</label><input type="date" id="ex-start" value="' + mon + '"></div><div class="field"><label>Weeks</label><select id="ex-weeks">' + [1, 2, 3, 4].map(n => '<option>' + n + '</option>').join('') + '</select></div><div class="field"><label>Invigilators per class</label><select onchange="exPer(this.value)">' + [1, 2].map(n => '<option' + (R.per === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="exAddDays()">Add exam days (Mon–Fri)</button><button class="btn" onclick="exAutoSubjects()">Fill subjects: Upper Primary + BECE (auto)</button></div><p class="hint">Pre-school to Basic 3 are handled by their own class teachers, so only Basic 4 to 9 are here (Basic 6 to 9 are upstairs). Each day has a Morning (9:00-10:30) and an Afternoon (1:00-2:30) session. Monday is pre-filled with Writing (morning) and Dictation (afternoon) for every class. For the other days, open the day on the Timetable tab and type the paper for each class (or use "same paper for every class"), then press <b>Fill days without hand changes</b> below to pick invigilators.</p><p class="hint">Rules: class teachers take part like everyone else; a teacher whose subject is being written that session is left free (unless there are not enough other teachers); duties are shared fairly.</p></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Actions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn" onclick="exRun(true)">Fill days without hand changes</button><button class="btn" onclick="exRun(false)">Rebuild every day</button><button class="btn" onclick="exSend()">Send to teachers</button><button class="btn" onclick="exPrint()">Print invigilation duty</button><button class="btn" onclick="exPrintTimetable(\'pri\')">Print Upper Primary timetable</button><button class="btn" onclick="exPrintTimetable(\'jhs\')">Print JHS timetable</button><button class="btn" onclick="exClear()">Clear everything</button></div></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Classes writing exams</h3><div class="ex-ex">' + all.map(c => '<label><input type="checkbox" ' + (on.indexOf(c) >= 0 ? 'checked ' : '') + 'onchange="exClassOn(\'' + escapeHtml(c) + '\',this.checked)"> ' + escapeHtml(c) + '</label>').join('') + '</div></div>'
     + '<div class="hs-form"><h3 style="margin:0 0 6px;">Not invigilating</h3><p class="hint" style="margin-top:0;">Tick anyone who should be left out (for example the head or someone on leave).</p><div class="ex-ex">' + ppl.map(t => '<label><input type="checkbox" ' + ((R.exclude || []).indexOf(t.id) >= 0 ? 'checked ' : '') + 'onchange="exExclude(\'' + t.id + '\',this.checked)"> ' + escapeHtml(t.name) + '</label>').join('') + '</div></div>';
 }
 /* Upper Primary (Basic 4-6) timetable copied from the school's printed sheet: exam day 1, 2, 3... in order; the Basic 7-9 (BECE) papers are typed in separately. */
 const EX_UP = [['Spellings and Writing', 'French'], ['Ghanaian Language', 'Religious and Moral Education'], ['Creative Arts', 'Computing'], ['English Language', 'Integrated Science'], ['Mathematics', ''], ['History', ''], ['Physical Education', '']];
+/* BECE order (2026 WAEC timetable): both papers of a subject are written in one sitting; day order below, Arabic day left out. */
+const EX_BECE = [
+  { p:['English Language','Religious and Moral Education'], t:['9:00AM - 11:00AM','1:00PM - 2:45PM'] },
+  { p:['Social Studies','Creative Arts and Design'], t:['9:00AM - 10:45AM','1:00PM - 3:05PM'] },
+  { p:['Integrated Science','Career Technology'], t:['9:00AM - 11:10AM','1:00PM - 3:05PM'] },
+  { p:['Mathematics','Ghanaian Language'], t:['9:00AM - 11:00AM','1:00PM - 3:00PM'] },
+  { p:['French','Computing'], t:['9:00AM - 10:45AM','1:00PM - 3:00PM'] }
+];
+/* One tap: Upper Primary papers from the school's timetable + JHS papers from the BECE order, then teachers are picked automatically (still editable). */
+function exAutoSubjects(silent){
+  const days = exSorted(); if (!days.length){ if (!silent) toast('Add the exam days first.'); return false; }
+  const pri = exClasses().filter(c => deptOfClass(c) === 'pri'), jhs = exClasses().filter(c => deptOfClass(c) === 'jhs');
+  days.forEach((d, i) => {
+    const up = EX_UP[i], be = EX_BECE[i];
+    EXS.forEach((ses, k) => {
+      const o = d[ses.id]; o.tl = o.tl || {};
+      pri.forEach(c => { const v = up ? up[k] : ''; if (v) o.papers[c] = v; else delete o.papers[c]; });
+      jhs.forEach(c => { const v = be ? be.p[k] : ''; if (v) o.papers[c] = v; else delete o.papers[c]; });
+      if (up){ o.time = o.time || ses.ph; }
+      if (be) o.tl.jhs = be.t[k]; else delete o.tl.jhs;
+    });
+  });
+  exGenerate(true); exSave();
+  if (!silent){ EX.tab = 'plan'; toast('Subjects filled (Upper Primary + BECE) and teachers picked. You can change anything.' + exShortMsg()); renderExamDuty(); }
+  return true;
+}
 function exUpperPrimary(){
   const days = exSorted(); if (!days.length){ toast('Add the exam days first.'); return; }
   const cls = exClasses().filter(c => deptOfClass(c) === 'pri'); if (!cls.length){ toast('No Basic 4-6 classes found.'); return; }
@@ -15206,7 +15232,7 @@ function exLevelRows(level){
       const o = d[s.id], by = {}; cls.forEach(c => { if (o.papers[c]){ (by[o.papers[c]] = by[o.papers[c]] || []).push(c); } });
       const keys = Object.keys(by); if (!keys.length) return null;
       const subj = keys.length === 1 ? keys[0].toUpperCase() : keys.map(k => k.toUpperCase() + ' (' + by[k].map(short).join(', ') + ')').join(' / ');
-      return { subj, time: (o.time || '').replace(/\s*-\s*/, ' - ') };
+      return { subj, time: ((o.tl && o.tl[level]) || o.time || '').replace(/\s*-\s*/, ' - ') };
     }).filter(Boolean);
     if (parts.length) rows.push({ date: exDateLine(d.date), parts });
   });
@@ -15230,10 +15256,10 @@ function exAddDays(){
   for (let w = 0; w < n; w++) for (let k = 0; k < 5; k++){
     const iso = dutyAdd(start, w * 7 + k); if (R.days.some(x => x.date === iso)) continue;
     const d = exFix({ date: iso, manual: false }); d.am.time = EXS[0].ph; d.pm.time = EXS[1].ph;
-    if (k === 0) cls.forEach(c => { d.am.papers[c] = 'Writing'; d.pm.papers[c] = 'Dictation'; });
     R.days.push(d); added++;
   }
-  exGenerate(true); EX.wk = start; EX.day = ''; EX.tab = 'plan'; exSave(); toast(added + ' exam days added. Monday is Writing and Dictation; fill in the other days.' + exShortMsg()); renderExamDuty();
+  exAutoSubjects(true);
+  EX.wk = start; EX.day = ''; EX.tab = 'plan'; exSave(); toast(added + ' exam days added. Subjects (Upper Primary + BECE) and teachers are filled in; change anything you need.' + exShortMsg()); renderExamDuty();
 }
 function exRun(keep){ if (!keep && !confirm('Rebuild every day? Names you changed by hand will be replaced.')) return; if (!keep) exR().days.forEach(d => { d.manual = false; }); exGenerate(keep); exSave(); toast('Done.' + exShortMsg()); EX.tab = 'plan'; renderExamDuty(); }
 function exField(date, ses, v){ const d = exR().days.find(x => x.date === date); if (!d) return; d[ses].time = v.trim(); exSave(); }
